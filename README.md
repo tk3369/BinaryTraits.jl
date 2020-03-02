@@ -1,12 +1,10 @@
 # BinaryTraits
 
-BinaryTraits is yet another traits library for Julia.  We focus on usability - it should be simple to understand and easy to use.
+BinaryTraits is yet another traits library for Julia.  This package focuses on usability - traits should be simple to understand and easy to use.
 
-The underlying mechanism is just [Holy Traits](https://ahsmart.com/pub/holy-traits-design-patterns-and-best-practice-book.html).  If you think about Holy Traits as the powerful manual transmission, then BinaryTraits is the automatic transmission.  The machinery is the same but it is a lot pleasant to use for casual users.
+The underlying mechanism is just [Holy Traits](https://ahsmart.com/pub/holy-traits-design-patterns-and-best-practice-book.html).  If you think about Holy Traits as the powerful manual transmission, then BinaryTraits is like automatic transmission.  The machinery is the same but it is a lot pleasant to use for casual users.
 
-A design consideration is to support only binary traits.  You either can do something or you cannot.  Putting this restriction in place makes everything easier.
-
-An important feature is the support of composite traits.
+A design consideration is to support only binary traits.  You either can do something or you cannot.  Putting this restriction in place makes everything easier. Another important feature is the support of composite traits.
 
 ## Example: tickling a duck and a dog
 
