@@ -1,4 +1,4 @@
-# BinaryTraits
+# BinaryTraits.jl
 
 BinaryTraits is yet another traits library for Julia.  This package focuses on usability - traits should be simple to understand and easy to use.
 
