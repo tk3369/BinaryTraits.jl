@@ -39,18 +39,19 @@ tickle(::CanFly, ::CannotSwim, x) = "Flying away"
 tickle(::Ability, ::Ability, x) = "Stuck laughing"
 ```
 
-So it must work as such:
-```
-tickle(Dog()) == "Stuck laughing"
-tickle(Duck()) == "Flying high and diving deep"
+So it just works:
+
+```julia
+tickle(Dog())   # "Stuck laughing"
+tickle(Duck())  # "Flying high and diving deep"
 ```
 
-## Composing traits
+## Making composite traits
 
 Sometimes we really want to compose traits and use it directly for dispatch.  The `@traitgroup` macro serves that purpose.
 
 ```julia
-@traitgroup FlySwim with Fly,Swim
+@traitgroup FlySwim as Fly,Swim
 ```
 
 Then, we can just dispatch as follows:

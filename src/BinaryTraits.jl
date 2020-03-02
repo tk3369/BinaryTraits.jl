@@ -1,6 +1,6 @@
 module BinaryTraits
 
-export @trait, @assign, @unassign, @traitgroup
+export @trait, @assign, @traitgroup
 
 # @trait Fly as Ability
 # ...is translated to:
@@ -34,21 +34,25 @@ end
 #   flytrait(::Duck) = CanFly()
 #   swimtrait(::Duck) = CanSwim()
 macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
-    usage = "Invalid @assign usage.  Try something like: @assign Dog with Swim,Run"
+    usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
     with === :with || error(usage)
     return _assign(T, traits, "Can")
 end
 
-# @unassign Dog with Fly,Speak
+# @unassign Dog from Fly,Speak
 # ...is translated to
 #   flytrait(::Dog) = CannotFly()
 #   speaktrait(::Dog) = CannotSpeak()
-macro unassign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
-    usage = "Invalid @unassign usage.  Try something like: @unassign Dog with Fly"
-    with === :with || error(usage)
+#
+# CAUTION: This is probably not a good idea.  State should not be maintained
+#   changing function definitions.
+macro unassign(T::Symbol, from::Symbol, traits::Union{Expr,Symbol})
+    usage = "Invalid @unassign usage.  Try something like: @unassign Duck from Fly"
+    from === :from || error(usage)
     return _assign(T, traits, "Cannot")
 end
 
+# Helper
 function _assign(T, traits, prefix)
     expressions = Expr[]
     trait_syms = traits isa Expr ? traits.args : [traits]
@@ -66,15 +70,15 @@ function _assign(T, traits, prefix)
     end)
 end
 
-# @traitgroup FlySwim with Fly,Swim
+# @traitgroup FlySwim as Fly,Swim
 # ...is translated to
 #   abstract type FlySwimTrait end
 #   struct CanFlySwim <: FlySwimTrait end
 #   struct CannotFlySwim <: FlySwimTrait end
 #   flyswimtrait(x) = flytrait(x) && swimtrait(x) ? CanFlySwim() : CannotFlySwim()
-macro traitgroup(name::Symbol, with::Symbol, traits::Expr)
-    usage = "Invalid @traitgroup usage.  Try something like: @traitgroup FlySwim with Fly,Swim"
-    with === :with || error(usage)
+macro traitgroup(name::Symbol, as::Symbol, traits::Expr)
+    usage = "Invalid @traitgroup usage.  Try something like: @traitgroup FlySwim as Fly,Swim"
+    as === :as || error(usage)
 
     trait_type = Symbol("$(name)Trait")
     can_type = Symbol("Can$(name)")

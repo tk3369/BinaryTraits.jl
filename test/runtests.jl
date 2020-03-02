@@ -17,10 +17,11 @@ module TestModule
     tickle(x) = tickle(flytrait(x), swimtrait(x), x)
     tickle(::CanFly, ::CanSwim, x) = "Flying high and diving deep"
     tickle(::CanFly, ::CannotSwim, x) = "Flying away"
+    tickle(::CannotFly, ::CanSwim, x) = "Swam away"
     tickle(::Ability, ::Ability, x) = "Stuck laughing"
 
     # composite trait
-    @traitgroup FlySwim with Fly,Swim
+    @traitgroup FlySwim as Fly,Swim
     spank(x) = spank(flyswimtrait(x), x)
     spank(::CanFlySwim, x) = "Flying high and diving deep"
     spank(::CannotFlySwim, x) = "Too bad"
@@ -33,11 +34,15 @@ module TestModule
             @test flytrait(duck) === CanFly()
             @test swimtrait(duck) === CanSwim()
 
-            @test tickle(dog) == "Stuck laughing"
+            @test tickle(dog) == "Swam away"
             @test tickle(duck) == "Flying high and diving deep"
 
             @test spank(dog) == "Too bad"
             @test spank(duck) == "Flying high and diving deep"
+
+            # Looks like the compiler elide away `flytrait` function if I do this
+            # BinaryTraits.@unassign Duck from Fly
+            # @test spank(duck) == "Too bad"
         end
     end
 end # module
