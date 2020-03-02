@@ -2,16 +2,23 @@ module BinaryTraits
 
 export @trait, @assign, @traitgroup
 
-# @trait Fly as Ability
-# ...is translated to:
-#   abstract type FlyTrait <: Ability end
-#   struct CanFly <: FlyTrait end
-#   struct CannotFly <: FlyTrait end
-#   flytrait(x) = CannotFly()
-macro trait(name, as, group)
+"""
+    @trait [name] as [category]
+
+Create a new trait under a specific category (an abstract type).
+For example, `@trait Fly as Ability` is translated to:
+
+```
+abstract type FlyTrait <: Ability end
+struct CanFly <: FlyTrait end
+struct CannotFly <: FlyTrait end
+flytrait(x) = CannotFly()
+```
+"""
+macro trait(name, as, category)
 
     usage = "invalid trait usage... try something like: @trait Fly as Ability"
-    typeof(name) === typeof(as) === typeof(group) === Symbol || error(usage)
+    typeof(name) === typeof(as) === typeof(category) === Symbol || error(usage)
     as === :as || error(usage)
 
     trait_type = Symbol("$(name)Trait")
@@ -21,7 +28,7 @@ macro trait(name, as, group)
     default_trait_function = Symbol("$(lower_name)trait")
 
     return esc(quote
-        abstract type $trait_type <: $group end
+        abstract type $trait_type <: $category end
         struct $can_type <: $trait_type end
         struct $cannot_type <: $trait_type end
         $(default_trait_function)(::Any) = $(cannot_type)()
@@ -33,6 +40,16 @@ end
 # ...is translated to
 #   flytrait(::Duck) = CanFly()
 #   swimtrait(::Duck) = CanSwim()
+"""
+    @assign [type] with [trait1, trait2, ...]
+
+Assign traits to a data type.  For example, `@assign Duck with Fly,Swim` is translated to:
+
+```
+flytrait(::Duck) = CanFly()
+swimtrait(::Duck) = CanSwim()
+```
+"""
 macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
     with === :with || error(usage)
@@ -70,12 +87,26 @@ function _assign(T, traits, prefix)
     end)
 end
 
-# @traitgroup FlySwim as Fly,Swim
-# ...is translated to
-#   abstract type FlySwimTrait end
-#   struct CanFlySwim <: FlySwimTrait end
-#   struct CannotFlySwim <: FlySwimTrait end
-#   flyswimtrait(x) = flytrait(x) && swimtrait(x) ? CanFlySwim() : CannotFlySwim()
+"""
+    @traitgroup [name] as [trait1, trait2, ...]
+
+Create a composite traits from several other traits.  For example,
+`@traitgroup FlySwim as Fly,Swim` is translated to:
+
+```
+abstract type FlySwimTrait end
+struct CanFlySwim <: FlySwimTrait end
+struct CannotFlySwim <: FlySwimTrait end
+
+function flyswimtrait(x)
+    if flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
+        CanFlySwim()
+    else
+        CannotFlySwim()
+    end
+end
+```
+"""
 macro traitgroup(name::Symbol, as::Symbol, traits::Expr)
     usage = "Invalid @traitgroup usage.  Try something like: @traitgroup FlySwim as Fly,Swim"
     as === :as || error(usage)
