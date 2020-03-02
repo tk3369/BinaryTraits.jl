@@ -1,4 +1,4 @@
-name = "MultiTraits"
+name = "BinaryTraits"
 uuid = "190e46ec-f771-4705-b939-984896f7be0e"
 authors = ["Tom Kwong <tk3369@gmail.com>"]
 version = "0.1.0"
