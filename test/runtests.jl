@@ -11,7 +11,7 @@ module TestModule
     struct Duck end
 
     @assign Dog with Swim
-    @assign Duck with Swim, Fly
+    @assign Duck with Swim,Fly
 
     # basic usage
     tickle(x) = tickle(flytrait(x), swimtrait(x), x)
@@ -21,7 +21,7 @@ module TestModule
     tickle(::Ability, ::Ability, x) = "Stuck laughing"
 
     # composite trait
-    @traitgroup FlySwim as Fly,Swim
+    @trait FlySwim as Ability prefix Can,Cannot with Fly,Swim
     spank(x) = spank(flyswimtrait(x), x)
     spank(::CanFlySwim, x) = "Flying high and diving deep"
     spank(::CannotFlySwim, x) = "Too bad"
