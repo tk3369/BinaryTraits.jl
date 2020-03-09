@@ -105,16 +105,19 @@ struct CannotFly <: FlyTrait end
 flytrait(x) = CannotFly()
 ```
 
-When you assign the `Fly` trait to the `Duck` data type using `@assign` macro, it is translated to:
+As you can see, our *opinion* is to define a new abstract type called  `FlyTrait`.  Likewise, we define `CanFly` and `CannotFly` subtypes.  Finally, we define a default trait function `flytrait` that just returns an instance of `CannotFly`.  Hence, all data types are automatically disqualified from the trait by default.
+
+Now, when you do `@assign Duck with Fly,Swim`, it is just translated to:
 
 ```julia
 flytrait(::Duck) = CanFly()
+swimtrait(::Duck) = CanSwim()
 ```
 
-The `@traitgroup` is slightly more interesting.  It creates a new trait by combining multiple traits together.  The positive trait is defined as something that exhibits *all* of the underlying traits.  Hence, `@traitgroup FlySwim as Fly,Swim` would be translated to the following:
+Making composite traits is slightly more interesting.  It creates a new trait by combining multiple traits together.  Having a composite trait is defined as one that exhibits *all* of the underlying traits.  Hence, `@trait FlySwim as Ability with Fly,Swim` would be translated to the following:
 
 ```julia
-abstract type FlySwimTrait end
+abstract type FlySwimTrait <: Ability end
 struct CanFlySwim <: FlySwimTrait end
 struct CannotFlySwim <: FlySwimTrait end
 
