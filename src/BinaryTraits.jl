@@ -21,31 +21,13 @@ end
 """
     @trait <name> [as <category>] [prefix <positive>,<negative>] [with <trait1,trait2,...>]
 
-Create a new abstract trait type named as `<name>Trait`.  Two subtypes are automatically defined with `Can<name>` and `Cannot<name>`.
+Create a new trait for `name`.
 
-If the `as` clause is provided, then `category` (an abstract type) will be used as the super type of the trait. For example, `@trait Fly as Ability` is translated to:
+* If the `as` clause is provided, then `category` (an abstract type) will be used as the super type of the trait type.
 
-```
-abstract type FlyTrait <: Ability end
-struct CanFly <: FlyTrait end
-struct CannotFly <: FlyTrait end
-flytrait(x) = CannotFly()
-```
+* If the `prefix` clause is provided, then it allows the user to choose different prefixes than the default ones (`Can` and `Cannot`) e.g. `prefix Is,Not` or `prefix Has,Not`.
 
-If the `prefix` clause is provided, then it allows the user to choose different prefixes than `Can` and `Cannot`.  For example, `@trait Iterable as Any prefix Is,Not` is translated to:
-
-```
-abstract type IterableTrait <: Any end
-struct IsIterable <: IterableTrait end
-struct NotIterable <: IterableTrait end
-iterabletrait(x) = NotIterable()
-```
-
-If the `with` clause is provided, then it defines a composite trait from existing traits. Note that you must specify at least 2 traits to make a composite trait.  An example would be:
-
-```
-@trait FlySwim as Ability prefix Can,Cannot with Fly,Swim
-```
+* If the `with` clause is provided, then it defines a composite trait from existing traits. Note that you must specify at least 2 traits to make a composite trait.
 """
 macro trait(name::Symbol, as::Symbol = :as, category::Symbol = :Any,
             prefix_clause = :prefix, prefixes::Expr = Expr(:tuple, :Can, :Cannot),
@@ -91,13 +73,7 @@ end
 """
     @assign <T> with <trait1, trait2, ...>
 
-Assign traits to the data type `T`.  For example, `@assign Duck with Fly,Swim`
-is translated to:
-
-```
-flytrait(::Duck) = CanFly()
-swimtrait(::Duck) = CanSwim()
-```
+Assign traits to the data type `T`.
 """
 macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
