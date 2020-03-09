@@ -2,10 +2,30 @@ module BinaryTraits
 
 export @trait, @assign, @traitgroup
 
-"""
-    @trait [name] as [category]
+# prefix customizations
 
-Create a new trait under a specific category (an abstract type).
+const prefix_map = Dict{Module,Dict{Symbol,Tuple{Symbol,Symbol}}}()
+
+function get_prefix(m::Module, trait::Symbol)
+    trait_dict = get!(prefix_map, m, Dict{Symbol,Tuple{Symbol,Symbol}}())
+    return get!(trait_dict, trait, (:Can, :Cannot))
+end
+
+function set_prefix(m::Module, trait::Symbol, prefixes::Tuple{Symbol, Symbol})
+    trait_dict = get!(prefix_map, m, Dict{Symbol,Tuple{Symbol,Symbol}}())
+    return get!(trait_dict, trait, prefixes)
+end
+
+# macros
+
+"""
+    @trait <name> [as <category>] [prefixing <positive> <negative>]
+
+Create a new abstract trait type named as `<name>Trait`.  Two subtypes
+are automatically defined with `Can<name>` and `Cannot<name>`.
+
+If the `as` clause is provided, then `category` (an abstract type)
+will be used as the super type of the trait.
 For example, `@trait Fly as Ability` is translated to:
 
 ```
@@ -14,18 +34,36 @@ struct CanFly <: FlyTrait end
 struct CannotFly <: FlyTrait end
 flytrait(x) = CannotFly()
 ```
-"""
-macro trait(name, as, category)
 
-    usage = "invalid trait usage... try something like: @trait Fly as Ability"
-    typeof(name) === typeof(as) === typeof(category) === Symbol || error(usage)
-    as === :as || error(usage)
+If the `prefixing` clause is provided, then it allows the user to choose different
+prefixes than `Can` and `Cannot`.  For example, `@trait Iterable as Any prefixing Is Not`
+is translated to:
+
+```
+abstract type IterableTrait <: Any end
+struct IsIterable <: IterableTrait end
+struct NotIterable <: IterableTrait end
+iterabletrait(x) = NotIterable()
+```
+"""
+macro trait(name, as_clause = :as, category = :Any,
+            prefix_clause = :prefixing, prefixes::Expr = (:Can, :Cannot))
+
+    usage = "Invalid trait usage. See doc string for this macro."
+    pos, neg = prefixes.args
+
+    typeof(name) === typeof(as_clause) === typeof(category) ===
+        typeof(prefix_clause) === Symbol || error(usage)
+    as_clause === :as || error(usage)
+    prefix_clause === :prefixing || error(usage)
 
     trait_type = Symbol("$(name)Trait")
-    can_type = Symbol("Can$(name)")
-    cannot_type = Symbol("Cannot$(name)")
+    can_type = Symbol("$(pos)$(name)")
+    cannot_type = Symbol("$(neg)$(name)")
     lower_name = lowercase(String(name))
     default_trait_function = Symbol("$(lower_name)trait")
+
+    set_prefix(__module__, name, (pos, neg))
 
     return esc(quote
         abstract type $trait_type <: $category end
@@ -36,14 +74,11 @@ macro trait(name, as, category)
     end)
 end
 
-# @assign Duck with Fly,Swim
-# ...is translated to
-#   flytrait(::Duck) = CanFly()
-#   swimtrait(::Duck) = CanSwim()
 """
     @assign [type] with [trait1, trait2, ...]
 
-Assign traits to a data type.  For example, `@assign Duck with Fly,Swim` is translated to:
+Assign traits to a data type.  For example, `@assign Duck with Fly,Swim`
+is translated to:
 
 ```
 flytrait(::Duck) = CanFly()
@@ -53,28 +88,12 @@ swimtrait(::Duck) = CanSwim()
 macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
     with === :with || error(usage)
-    return _assign(T, traits, "Can")
-end
 
-# @unassign Dog from Fly,Speak
-# ...is translated to
-#   flytrait(::Dog) = CannotFly()
-#   speaktrait(::Dog) = CannotSpeak()
-#
-# CAUTION: This is probably not a good idea.  State should not be maintained
-#   changing function definitions.
-macro unassign(T::Symbol, from::Symbol, traits::Union{Expr,Symbol})
-    usage = "Invalid @unassign usage.  Try something like: @unassign Duck from Fly"
-    from === :from || error(usage)
-    return _assign(T, traits, "Cannot")
-end
-
-# Helper
-function _assign(T, traits, prefix)
     expressions = Expr[]
     trait_syms = traits isa Expr ? traits.args : [traits]
     for t in trait_syms
         trait_function = Symbol(lowercase("$(t)trait"))
+        prefix = get_prefix(__module__, t)[1]
         can_type = Symbol("$prefix$t")
         push!(expressions,
             Expr(:(=),
@@ -88,7 +107,7 @@ function _assign(T, traits, prefix)
 end
 
 """
-    @traitgroup [name] as [trait1, trait2, ...]
+    @traitgroup <name> as <trait1, trait2, ...> [prefixing <positive> <negatie>]
 
 Create a composite traits from several other traits.  For example,
 `@traitgroup FlySwim as Fly,Swim` is translated to:
@@ -106,20 +125,26 @@ function flyswimtrait(x)
     end
 end
 ```
+
+The `prefixing` clause is used to customize the positive/negative prefixes
+in the trait types rather than the default Can/Cannot.
 """
-macro traitgroup(name::Symbol, as::Symbol, traits::Expr)
-    usage = "Invalid @traitgroup usage.  Try something like: @traitgroup FlySwim as Fly,Swim"
+macro traitgroup(name::Symbol, as::Symbol, traits::Expr,
+                 prefix_clause = :prefixing, pos = :Can, neg = :Cannot)
+    usage = "Invalid @traitgroup usage. See doc string for details."
     as === :as || error(usage)
+    prefix_clause === :prefixing || error(usage)
 
     trait_type = Symbol("$(name)Trait")
-    can_type = Symbol("Can$(name)")
-    cannot_type = Symbol("Cannot$(name)")
+    can_type = Symbol("$(pos)$(name)")
+    cannot_type = Symbol("$(neg)$(name)")
     lower_name = lowercase(String(name))
     default_trait_function = Symbol("$(lower_name)trait")
 
     # Construct something like: flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
     traits_func_names = [Symbol(lowercase("$(sym)trait")) for sym in traits.args]
-    traits_can_types  = [Symbol("Can$(sym)") for sym in traits.args]
+    traits_can_types  = [Symbol("$(get_prefix(__module__, sym)[1])$(sym)")
+        for sym in traits.args]
     condition =
         Expr(:(&&),
             [Expr(:call, :(===), Expr(:call, f, :x), Expr(:call, g))
