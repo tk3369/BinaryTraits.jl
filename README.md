@@ -69,10 +69,10 @@ This should make your code a lot more readable.
 
 ## Making composite traits
 
-Sometimes we really want to compose traits and use it directly for dispatch.  The `@traitgroup` macro serves that purpose.
+Sometimes we really want to compose traits and use it directly for dispatch.  In that case, we just need to use the `with` clause:
 
 ```julia
-@traitgroup FlySwim as Ability with Fly,Swim
+@trait FlySwim as Ability prefix Can,Cannot with Fly,Swim
 ```
 
 Then, we can just dispatch as follows:
@@ -90,11 +90,9 @@ spank(Duck())   # "Flying high and diving deep"
 spank(Dog())    # "Too Bad"
 ```
 
-The `@traitgroup` macro also accepts a `prefix` clause just like `@trait`.
-
 ## How does it work?
 
-The underlying machinery is extremely simple.  They can be found conveniently in the doc strings for the `@trait`, `@assign`, and `@traitgroup` macros as well.
+The underlying machinery is extremely simple.  They can be found conveniently in the doc strings for the `@trait` and `@assign` macros as well.
 
 Using the above example, when you define a `Fly` trait using `@trait` macro, it literally expands to the following code:
 
