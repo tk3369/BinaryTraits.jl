@@ -1,10 +1,10 @@
 # BinaryTraits.jl
 
-BinaryTraits is yet another traits library for Julia.  This package focuses on usability - traits should be simple to understand and easy to use.  For that reason, it is designed to be an *opinionated* library, and it follow certain conventions.
+BinaryTraits is yet another traits library for Julia.  This package focuses on usability - traits should be simple to understand and easy to use.  For that reason, it is designed to be an *opinionated* library, so it follows certain conventions.
 
 The underlying mechanism is just [Holy Traits](https://ahsmart.com/pub/holy-traits-design-patterns-and-best-practice-book.html).  If you think about Holy Traits as the powerful manual transmission, then BinaryTraits is like automatic transmission.  The machinery is the same but it is a lot more pleasant to use for casual users.
 
-A design consideration is to support only binary traits.  You either can do something or you cannot.  Putting this restriction in place makes everything easier (at least for me 😉). Traits must be explicitly assigned to data types.
+A design consideration is to support only binary traits.  You either can do something or you cannot.  Putting this restriction in place makes everything easier (at least for me 😉).
 
 This package supports the concept of composite traits.  A composite traits is defined as a data type that exhibits all of the underlying traits.
 
@@ -29,7 +29,7 @@ We may want to assign them traits:
 
 ```julia
 @assign Dog with Swim
-@assign Duck with Swim, Fly
+@assign Duck with Swim,Fly
 ```
 
 Then, you can just do multiple dispatch as usual:
@@ -50,7 +50,7 @@ tickle(Duck())  # "Flying high and diving deep"
 
 ## Choosing your own prefix for trait types
 
-When you define a trait using verbs like "Fly" or "Swim" in the above, it makes sense to define trait types with `Can` and `Cannot` prefixes.  But, what if you want to define a trait using a noun or adjective?
+When you define a trait using verbs like *Fly* or *Swim* in the above, it makes sense to define trait types with `Can` and `Cannot` prefixes.  But, what if you want to define a trait using a noun or an adjective?
 
 In that case, you can define your trait with the `prefix` clause:
 
@@ -92,9 +92,7 @@ spank(Dog())    # "Too Bad"
 
 ## How does it work?
 
-The underlying machinery is extremely simple.  They can be found conveniently in the doc strings for the `@trait` and `@assign` macros as well.
-
-Using the above example, when you define a `Fly` trait using `@trait` macro, it literally expands to the following code:
+The underlying machinery is extremely simple. Using the above example, when you define a traits like `@trait Fly as Ability`, it literally expands to the following code:
 
 ```julia
 abstract type FlyTrait <: Ability end
