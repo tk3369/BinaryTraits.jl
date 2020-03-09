@@ -72,7 +72,7 @@ This should make your code a lot more readable.
 Sometimes we really want to compose traits and use it directly for dispatch.  The `@traitgroup` macro serves that purpose.
 
 ```julia
-@traitgroup FlySwim as Fly,Swim
+@traitgroup FlySwim as Ability with Fly,Swim
 ```
 
 Then, we can just dispatch as follows:
@@ -90,7 +90,39 @@ spank(Duck())   # "Flying high and diving deep"
 spank(Dog())    # "Too Bad"
 ```
 
+The `@traitgroup` macro also accepts a `prefix` clause just like `@trait`.
+
 ## How does it work?
 
 The underlying machinery is extremely simple.  They can be found conveniently in the doc strings for the `@trait`, `@assign`, and `@traitgroup` macros as well.
 
+Using the above example, when you define a `Fly` trait using `@trait` macro, it literally expands to the following code:
+
+```julia
+abstract type FlyTrait <: Ability end
+struct CanFly <: FlyTrait end
+struct CannotFly <: FlyTrait end
+flytrait(x) = CannotFly()
+```
+
+When you assign the `Fly` trait to the `Duck` data type using `@assign` macro, it is translated to:
+
+```julia
+flytrait(::Duck) = CanFly()
+```
+
+The `@traitgroup` is slightly more interesting.  It creates a new trait by combining multiple traits together.  The positive trait is defined as something that exhibits *all* of the underlying traits.  Hence, `@traitgroup FlySwim as Fly,Swim` would be translated to the following:
+
+```julia
+abstract type FlySwimTrait end
+struct CanFlySwim <: FlySwimTrait end
+struct CannotFlySwim <: FlySwimTrait end
+
+function flyswimtrait(x)
+    if flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
+        CanFlySwim()
+    else
+        CannotFlySwim()
+    end
+end
+```
