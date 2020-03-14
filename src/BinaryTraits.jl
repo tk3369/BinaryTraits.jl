@@ -1,6 +1,26 @@
 module BinaryTraits
 
+using MacroTools
+
 export @trait, @assign
+export istrait
+
+const VERBOSE = Ref(true)
+
+"""
+    istrait(x)
+
+Return `true` if x is a trait.  This function is expected to be extended by
+users for their trait types.  The extension is automatic when the
+[`@trait`](@ref) macro is used.
+"""
+istrait(x::DataType) = false
+
+# Debugging
+
+function verbose_mode(b::Bool)
+    VERBOSE[] = b
+end
 
 # prefix customizations
 
@@ -16,12 +36,12 @@ function set_prefix(m::Module, trait::Symbol, prefixes::Tuple{Symbol, Symbol})
     return get!(trait_dict, trait, prefixes)
 end
 
-# macros
+# macros for our domain specific language
 
 """
     @trait <name> [as <category>] [prefix <positive>,<negative>] [with <trait1,trait2,...>]
 
-Create a new trait for `name`.
+Create a new trait type for `name` called `\$(name)Trait`.
 
 * If the `as` clause is provided, then `category` (an abstract type) will be used as the super type of the trait type.
 
@@ -45,6 +65,8 @@ macro trait(name::Symbol, as::Symbol = :as, category::Symbol = :Any,
     lower_name = lowercase(String(name))
     default_trait_function = Symbol("$(lower_name)trait")
 
+    set_prefix(__module__, name, (pos,neg))
+
     default_expr = if traits !== nothing
         # Construct something like: flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
         traits_func_names = [Symbol(lowercase("$(sym)trait")) for sym in traits.args]
@@ -61,19 +83,26 @@ macro trait(name::Symbol, as::Symbol = :as, category::Symbol = :Any,
         Expr(:call, cannot_type)
     end
 
-    return esc(quote
+    expr = quote
         abstract type $trait_type <: $category end
         struct $can_type <: $trait_type end
         struct $cannot_type <: $trait_type end
+        BinaryTraits.istrait(::Type{$trait_type}) = true
         $(default_trait_function)(x::Any) = $default_expr
         nothing
-    end)
+    end
+    display_expanded_code(expr)
+    return esc(expr)
 end
 
 """
-    @assign <T> with <trait1, trait2, ...>
+    @assign <T> with <Trait1, Trait2, ...>
 
-Assign traits to the data type `T`.
+Assign traits to the data type `T`.  Translated to something like:
+
+    <x>trait(::T) = Can<X>()
+
+where `x` is the name of the trait `X` in all lowercase, and `T` is the type being assigned with the trait `X`.
 """
 macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
@@ -90,10 +119,21 @@ macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
                 Expr(:call, trait_function, Expr(:(::), T)),
                 Expr(:call, can_type)))
     end
-    return esc(quote
+    expr = quote
         $(expressions...)
         nothing
-    end)
+    end
+    display_expanded_code(expr)
+    return esc(expr)
 end
+
+function display_expanded_code(expr)
+    if VERBOSE[]
+        code = MacroTools.postwalk(rmlines, expr)
+        @info "Generated code" code
+    end
+    return nothing
+end
+
 
 end # module

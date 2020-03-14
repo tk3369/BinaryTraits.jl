@@ -27,6 +27,9 @@ module TestModule
     spank(::CannotFlySwim, x) = "Too bad"
 
     function check()
+        @test BinaryTraits.istrait(FlyTrait) === true
+        @test BinaryTraits.istrait(Int) === false
+
         let dog = Dog(), duck = Duck()
             @test flytrait(dog) === CannotFly()
             @test swimtrait(dog) === CanSwim()
