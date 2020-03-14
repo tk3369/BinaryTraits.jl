@@ -6,7 +6,9 @@ The underlying mechanism is just [Holy Traits](https://ahsmart.com/pub/holy-trai
 
 A design consideration is to support only binary traits (hence the name of the package).  You either can do something or you cannot.  Putting this restriction in place makes everything easier (at least for me 😉).
 
-This package supports the concept of composite traits.  A composite traits is defined as a data type that exhibits all of the underlying traits.
+Composite traits are supported.  A composite traits is defined as a data type that exhibits all of the underlying traits.
+
+NOTE: This package is a proof of concept at the moment.  Use with caution.
 
 ## Example: tickling a duck and a dog
 
