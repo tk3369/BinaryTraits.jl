@@ -18,7 +18,7 @@ istrait(x::DataType) = false
 
 # Debugging
 
-function verbose_mode(b::Bool)
+function set_verbose(b::Bool)
     VERBOSE[] = b
 end
 
