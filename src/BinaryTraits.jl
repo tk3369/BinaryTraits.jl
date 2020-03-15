@@ -5,7 +5,7 @@ using MacroTools
 export @trait, @assign
 export istrait
 
-const VERBOSE = Ref(true)
+const VERBOSE = Ref(false)
 
 """
     istrait(x)
@@ -20,6 +20,12 @@ istrait(x::DataType) = false
 
 function set_verbose(b::Bool)
     VERBOSE[] = b
+end
+
+# types
+
+struct SyntaxError <: Exception
+    msg
 end
 
 # prefix customizations
@@ -49,15 +55,9 @@ Create a new trait type for `name` called `\$(name)Trait`.
 
 * If the `with` clause is provided, then it defines a composite trait from existing traits. Note that you must specify at least 2 traits to make a composite trait.
 """
-macro trait(name::Symbol, as::Symbol = :as, category::Symbol = :Any,
-            prefix_clause = :prefix, prefixes::Expr = Expr(:tuple, :Can, :Cannot),
-            with_clause::Symbol = :with, traits = nothing)
-
-    usage = "Invalid @trait usage. See doc string for details."
+macro trait(name::Symbol, args...)
+    category, prefixes, traits = parse_trait_args(args)
     pos, neg = prefixes.args
-
-    as === :as || error(usage)
-    prefix_clause === :prefix || error(usage)
 
     trait_type = Symbol("$(name)Trait")
     can_type = Symbol("$(pos)$(name)")
@@ -106,7 +106,7 @@ where `x` is the name of the trait `X` in all lowercase, and `T` is the type bei
 """
 macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
-    with === :with || error(usage)
+    with === :with || throw(SyntaxError(usage))
 
     expressions = Expr[]
     trait_syms = traits isa Expr ? traits.args : [traits]
@@ -135,5 +135,52 @@ function display_expanded_code(expr)
     return nothing
 end
 
+"""
+Parse arguments for the @trait macro.
+"""
+function parse_trait_args(args)
+
+    category = :Any
+    prefixes = Expr(:tuple, :Can, :Cannot)
+    traits = nothing
+
+    usage = "Invalid @trait usage. See doc string for details."
+    length(args) % 2 === 0 || throw(SyntaxError(usage))
+
+    if length(args) > 0 && args[1] == :as
+        category = args[2]
+        category isa Symbol || throw(SyntaxError("Not a symbol: $category. $usage"))
+        args = args[3:end]
+    end
+
+    if length(args) > 0 && args[1] == :prefix
+        prefixes =  args[2]
+        is_tuple_of_symbols(prefixes; n = 2) || throw(SyntaxError(usage))
+        args = args[3:end]
+    end
+
+    if length(args) > 0 && args[1] == :with
+        traits =  args[2]
+        (traits isa Symbol || is_tuple_of_symbols(traits; n = 2, op = >=)) ||
+            throw(SyntaxError(usage))
+        args = args[3:end]
+    end
+
+    return (category, prefixes, traits)
+end
+
+"""
+Check if `x` is an expression of a tuple of symbols.
+If `n` is specified then also check whether the tuple
+has `n` elements. The `op` argument is used to customize
+the check against `n`. Use `>=` or `<=` to check min/max
+constraints.
+"""
+function is_tuple_of_symbols(x; n = nothing, op = isequal)
+    x isa Expr &&
+    x.head == :tuple &&
+    all(x -> x isa Symbol, x.args) &&
+    (n === nothing || op(length(x.args), n))
+end
 
 end # module
