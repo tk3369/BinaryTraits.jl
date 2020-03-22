@@ -15,17 +15,17 @@ macro trait(name::Symbol, args...)
     category, prefixes, traits = parse_trait_args(args)
     pos, neg = prefixes.args
 
-    trait_type = Symbol("$(name)Trait")
+    trait_type = trait_type_name(name)
     can_type = Symbol("$(pos)$(name)")
     cannot_type = Symbol("$(neg)$(name)")
     lower_name = lowercase(String(name))
-    default_trait_function = Symbol("$(lower_name)trait")
+    default_trait_function = trait_func_name(name)
 
     set_prefix(__module__, name, (pos,neg))
 
     default_expr = if traits !== nothing
         # Construct something like: flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
-        traits_func_names = [Symbol(lowercase("$(sym)trait")) for sym in traits.args]
+        traits_func_names = [trait_func_name(sym) for sym in traits.args]
         traits_can_types  = [Symbol("$(get_prefix(__module__, sym)[1])$(sym)")
             for sym in traits.args]
         condition =
@@ -67,13 +67,23 @@ macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     expressions = Expr[]
     trait_syms = traits isa Expr ? traits.args : [traits]
     for t in trait_syms
-        trait_function = Symbol(lowercase("$(t)trait"))
-        prefix = get_prefix(__module__, t)[1]
-        can_type = Symbol("$prefix$t")
+        trait_function = trait_func_name(t)
+        prefixes = get_prefix(__module__, t)
+        can_prefix = prefixes[1]
+        can_type = Symbol("$can_prefix$t")
+
+        # Add an expression like: <trait>trait(::T) = Can<Trait>()
+        # e.g. flytrait(::Duck) = CanFly()
         push!(expressions,
             Expr(:(=),
                 Expr(:call, trait_function, Expr(:(::), T)),
                 Expr(:call, can_type)))
+
+        # e.g. BinaryTraits.assign(MyModule, Duck, FlyTrait)
+        trait_type = trait_type_name(t)
+        push!(expressions, :(
+            BinaryTraits.assign($__module__, $T, $trait_type)
+        ))
     end
     expr = quote
         $(expressions...)

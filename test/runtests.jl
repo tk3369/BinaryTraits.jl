@@ -113,6 +113,32 @@ module SyntaxErrors
     end
 end
 
+module Interfaces
+    using BinaryTraits, Test
+    @trait Fly
+    @implement Fly by liftoff()
+    @implement Fly by speed(resistence::Float64)::Float64
+    @implement Fly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
+
+    struct Bird end
+    @assign Bird with Fly
+    liftoff(::Bird) = "hi ho!"
+    speed(::Bird, resistence::Float64) = 100 - resistence
+    flyto(::Bird, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
+
+    struct Duck end
+    @assign Duck with Fly
+    liftoff(::Duck) = "hi ho!"
+
+    function test()
+        bird_check = @check(Bird)
+        @test bird_check.fully_implemented === true
+
+        duck_check = @check(Duck)
+        @test duck_check.fully_implemented === false
+    end
+end
+
 @testset "My Tests" begin
     import .SingleTrait;        SingleTrait.test()
     import .MultipleTraits;     MultipleTraits.test()
@@ -120,4 +146,5 @@ end
     import .CustomPrefixes;     CustomPrefixes.test()
     import .CompositeTraits;    CompositeTraits.test()
     import .SyntaxErrors;       SyntaxErrors.test()
+    import .Interfaces;         Interfaces.test()
 end
