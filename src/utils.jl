@@ -25,3 +25,32 @@ Return the name of the trait instropectin function given a trait `t`.
 For example, it would be `flytrait` for a `Fly` trait.
 """
 trait_func_name(t) = Symbol(lowercase(string(t)) * "trait")
+
+"""
+Check if `x` is an expression of a tuple of symbols.
+If `n` is specified then also check whether the tuple
+has `n` elements. The `op` argument is used to customize
+the check against `n`. Use `>=` or `<=` to check min/max
+constraints.
+"""
+function is_tuple_of_symbols(x; n = nothing, op = isequal)
+    x isa Expr &&
+    x.head == :tuple &&
+    all(x -> x isa Symbol, x.args) &&
+    (n === nothing || op(length(x.args), n))
+end
+
+"""
+    display_expanded_code(expr::Expr)
+
+Display the expanded code from a macro for debugging purpose.
+Only works when the verbose flag is set using `set_verbose`.
+"""
+function display_expanded_code(expr::Expr)
+    if VERBOSE[]
+        code = MacroTools.postwalk(rmlines, expr)
+        @info "Generated code" code
+    end
+    return nothing
+end
+

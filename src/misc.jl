@@ -1,3 +1,7 @@
+struct SyntaxError <: Exception
+    msg
+end
+
 # verbose flag
 
 const VERBOSE = Ref(false)
