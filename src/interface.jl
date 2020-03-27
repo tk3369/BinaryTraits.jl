@@ -38,8 +38,10 @@ end
 Assign data type `T` with the specified `trait`.
 """
 function assign(m::Module, T::Assignable, trait::DataType)
-    trait_dict = get!(traits_map, m, Dict{Assignable,Set{DataType}}())
-    return get!(trait_dict, T, Set{DataType}([trait]))
+    type_dict = get!(traits_map, m, Dict{Assignable,Set{DataType}}())
+    traits_set = get!(type_dict, T, Set{DataType}())
+    push!(traits_set, trait)
+    return nothing
 end
 
 """
@@ -99,6 +101,29 @@ function contracts(m::Module, trait::DataType)
 end
 
 """
+    InterfaceReview
+
+An InterfaceReview object contains the validation results of
+an interface.
+"""
+struct InterfaceReview
+    type::Assignable
+    implemented::Bool
+    misses::Vector{Contract}
+end
+
+function Base.show(io::IO, ir::T) where {T <: InterfaceReview}
+    if ir.implemented
+        print(io, "$T: $(ir.type) has fully implemented all contracts")
+    else
+        println(io, "$T: $(ir.type) is missing the following implementations:")
+        for c in ir.misses
+            println(io, "- $c")
+        end
+    end
+end
+
+"""
     fully_implemented(m::Module, T::Assignable)
 
 Check if the data type `T` defined in module `m` has fully implemented
@@ -113,13 +138,13 @@ function fully_implemented(m::Module, T::Assignable)
             method_exists = hasmethod(c.func, tuple_type)
             if !method_exists
                 sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
-                # @warn "Missing implementation: $sig"
+                VERBOSE[] && @warn "Missing implementation: $sig" c.func tuple_type
                 all_good = false
                 push!(missing_contracts, c)
             end
         end
     end
-    return (fully_implemented = all_good, missing_contracts = missing_contracts)
+    return InterfaceReview(T, all_good, missing_contracts)
 end
 
 """
