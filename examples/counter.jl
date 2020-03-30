@@ -1,8 +1,10 @@
 using Revise, BinaryTraits
 
-# support that Base defines the Iterable interface and its contract
+# Simulate the case that Base defines the Iterable interface and its contracts
+# https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration-1
 import Base: iterate
 @trait Iterable prefix Is,Not
+@implement Iterable by iterate()::Any
 @implement Iterable by iterate(state::Any)::Any
 
 # In my module, I have a struct that I wish to implement Iterable interface
@@ -25,7 +27,7 @@ Base.iterate(c::Counter, state = 0) = c.n > state ? (state+1,state+1) : nothing
 # ok to use
 sum(x for x in Counter(3))
 
-# But comprehension is broken without a length
+# But array comprehension is broken without a length
 [x for x in Counter(3)]
 
 # Create new Length trait
