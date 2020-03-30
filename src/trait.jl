@@ -1,4 +1,25 @@
-# macros for our domain specific language
+"""
+The `prefix_map` is a Dict that maps a module to another Dict, which maps
+a trait (as a Symbol) to tuple of positive and negative prefixes for the
+trait type.  For example:
+
+```
+Main -> :Fly -> (:Can, :Cannot)
+```
+"""
+const prefix_map = Dict{Module,Dict{Symbol,Tuple{Symbol,Symbol}}}()
+
+"Get trait type positive/negative prefixes for `trait`."
+function get_prefix(m::Module, trait::Symbol)
+    trait_dict = get!(prefix_map, m, Dict{Symbol,Tuple{Symbol,Symbol}}())
+    return get!(trait_dict, trait, (:Can, :Cannot))
+end
+
+"Set trait type positive/negative `prefixes` for `trait`."
+function set_prefix(m::Module, trait::Symbol, prefixes::Tuple{Symbol, Symbol})
+    trait_dict = get!(prefix_map, m, Dict{Symbol,Tuple{Symbol,Symbol}}())
+    return get!(trait_dict, trait, prefixes)
+end
 
 """
     @trait <name> [as <category>] [prefix <positive>,<negative>] [with <trait1,trait2,...>]
@@ -15,17 +36,17 @@ macro trait(name::Symbol, args...)
     category, prefixes, traits = parse_trait_args(args)
     pos, neg = prefixes.args
 
-    trait_type = Symbol("$(name)Trait")
+    trait_type = trait_type_name(name)
     can_type = Symbol("$(pos)$(name)")
     cannot_type = Symbol("$(neg)$(name)")
     lower_name = lowercase(String(name))
-    default_trait_function = Symbol("$(lower_name)trait")
+    default_trait_function = trait_func_name(name)
 
     set_prefix(__module__, name, (pos,neg))
 
     default_expr = if traits !== nothing
         # Construct something like: flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
-        traits_func_names = [Symbol(lowercase("$(sym)trait")) for sym in traits.args]
+        traits_func_names = [trait_func_name(sym) for sym in traits.args]
         traits_can_types  = [Symbol("$(get_prefix(__module__, sym)[1])$(sym)")
             for sym in traits.args]
         condition =
@@ -67,13 +88,23 @@ macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     expressions = Expr[]
     trait_syms = traits isa Expr ? traits.args : [traits]
     for t in trait_syms
-        trait_function = Symbol(lowercase("$(t)trait"))
-        prefix = get_prefix(__module__, t)[1]
-        can_type = Symbol("$prefix$t")
+        trait_function = trait_func_name(t)
+        prefixes = get_prefix(__module__, t)
+        can_prefix = prefixes[1]
+        can_type = Symbol("$can_prefix$t")
+
+        # Add an expression like: <trait>trait(::T) = Can<Trait>()
+        # e.g. flytrait(::Duck) = CanFly()
         push!(expressions,
             Expr(:(=),
                 Expr(:call, trait_function, Expr(:(::), T)),
                 Expr(:call, can_type)))
+
+        # e.g. BinaryTraits.assign(MyModule, Duck, FlyTrait)
+        trait_type = trait_type_name(t)
+        push!(expressions, :(
+            BinaryTraits.assign($__module__, $T, $trait_type)
+        ))
     end
     expr = quote
         $(expressions...)
@@ -81,14 +112,6 @@ macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     end
     display_expanded_code(expr)
     return esc(expr)
-end
-
-function display_expanded_code(expr)
-    if VERBOSE[]
-        code = MacroTools.postwalk(rmlines, expr)
-        @info "Generated code" code
-    end
-    return nothing
 end
 
 # Helper functions
@@ -125,18 +148,4 @@ function parse_trait_args(args)
     end
 
     return (category, prefixes, traits)
-end
-
-"""
-Check if `x` is an expression of a tuple of symbols.
-If `n` is specified then also check whether the tuple
-has `n` elements. The `op` argument is used to customize
-the check against `n`. Use `>=` or `<=` to check min/max
-constraints.
-"""
-function is_tuple_of_symbols(x; n = nothing, op = isequal)
-    x isa Expr &&
-    x.head == :tuple &&
-    all(x -> x isa Symbol, x.args) &&
-    (n === nothing || op(length(x.args), n))
 end
