@@ -127,6 +127,10 @@ an interface.
 end
 
 function Base.show(io::IO, ir::T) where {T <: InterfaceReview}
+    if length(ir.implemented) == length(ir.misses) == 0
+        print(io, "$T: $(ir.type) is not associated to any contracts.")
+        return nothing
+    end
     if ir.result
         print(io, "$T: $(ir.type) has fully implemented all contracts:")
         for (i, c) in enumerate(ir.implemented)
