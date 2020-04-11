@@ -1,0 +1,6 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+BinaryTraits = "190e46ec-f771-4705-b939-984896f7be0e"
+
+[compat]
+Documenter = "0.24"
