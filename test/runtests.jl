@@ -142,7 +142,7 @@ module Interfaces
     @assign Duck with Fly
     liftoff(::Duck) = "hi ho!"
 
-    @trait Pretty
+    @trait Pretty prefix Is,Not
     struct Flamingo end
     @assign Flamingo with Pretty
 
@@ -160,6 +160,47 @@ module Interfaces
             @test flamingo_check.result == true
             @test flamingo_check.implemented |> length == 0
             @test flamingo_check.misses |> length == 0
+
+            # test `show` function
+            buf = IOBuffer()
+            contains(s) = x -> occursin(s, x)
+
+            show(buf, flamingo_check)
+            @test buf |> take! |> String |> contains("not associated to any contracts")
+
+            show(buf, bird_check)
+            @test buf |> take! |> String |> contains("fully implemented")
+
+            show(buf, duck_check)
+            @test buf |> take! |> String |> contains("missing")
+        end
+    end
+end
+
+module Verbose
+    using BinaryTraits, Test, Logging
+
+    # Capture output and make sure that `expected` appears in the log
+    # when expression `ex` is evaluated
+    macro testme(expected, ex)
+        esc(quote
+            buf = IOBuffer()
+            with_logger(ConsoleLogger(buf)) do
+                @macroexpand($ex)
+            end
+            s = String(take!(buf))
+            @test occursin($expected, s)
+        end)
+    end
+
+    struct Cat end
+
+    # Testing verbose mode
+    function test()
+        BinaryTraits.set_verbose(true)
+        @testset "Verbose" begin
+            @testme "struct CanScratch" @trait Scratch
+            @testme "scratchtrait(::Cat) = CanScratch()" @assign Cat with Scratch
         end
     end
 end
@@ -172,4 +213,5 @@ end
     import .CompositeTraits;    CompositeTraits.test()
     import .SyntaxErrors;       SyntaxErrors.test()
     import .Interfaces;         Interfaces.test()
+    import .Verbose;            Verbose.test()
 end
