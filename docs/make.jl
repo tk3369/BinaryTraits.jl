@@ -5,7 +5,7 @@ makedocs(
     modules = [BinaryTraits],
     sitename="BinaryTraits",
     pages = [
-        "Introduction" => "intro.md",
+        "Introduction" => "index.md",
         "User Guide" => "guide.md",
         "Reference" => "reference.md",
     ]

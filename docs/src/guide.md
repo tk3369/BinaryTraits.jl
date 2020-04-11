@@ -1,7 +1,6 @@
-```@contents
-```
+# User Guide
 
-# Choosing your own prefix for trait types
+## Choosing your own prefix for trait types
 
 When you define a trait using verbs like *Fly* or *Swim* in the above, it makes sense to define trait types with `Can` and `Cannot` prefixes.  But, what if you want to define a trait using a noun or an adjective?
 
@@ -20,7 +19,7 @@ NotIterable
 
 This should make your code a lot more readable.
 
-# Making composite traits
+## Making composite traits
 
 Sometimes we really want to compose traits and use it directly for dispatch.  In that case, we just need to use the `with` clause:
 
@@ -43,7 +42,7 @@ spank(Duck())   # "Flying high and diving deep"
 spank(Dog())    # "Too Bad"
 ```
 
-# How does it work?
+## How does it work?
 
 The underlying machinery is extremely simple. Using the above example, when you define a traits like `@trait Fly as Ability`, it literally expands to the following code:
 
