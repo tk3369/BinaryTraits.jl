@@ -174,12 +174,10 @@ function fully_implemented(m::Module, T::Assignable)
 end
 
 """
-    @check <Type>
+    @check <T>
 
 Check whether the data type `T` fully implements all of its
-assigned traits.  Return a named tuple with the following attributes:
-- `fully_implemented`: Bool
-- `missing_contracts`: Contract[]
+assigned traits.  Return an [`InterfaceReview`](@ref) object.
 """
 macro check(T)
     return esc(quote
@@ -191,6 +189,14 @@ end
     @implement <CanType> by <FunctionSignature>
 
 Register function signature for the specified `CanType` of a trait.
+You can use the [`@check`](@ref) macro to verify your implementation
+after these interface contracts are registered.
+
+For example:
+
+```julia
+    @implement CanFly by fly(direction::Direction, speed::Float64)
+```
 """
 macro implement(can_type, by, sig)
 

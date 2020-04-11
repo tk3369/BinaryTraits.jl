@@ -1,4 +1,27 @@
-```@autodocs
-Modules = [BinaryTraits]
-Order   = [:constant, :macro, :function, :type]
+# BinaryTraits
+
+```@contents
+```
+
+## Macros
+
+```@docs
+@trait
+@assign
+@implement
+@check
+```
+
+## Functions
+
+```@docs
+istrait
+```
+
+## Types
+
+```@docs
+InterfaceReview
+Assignable
+Contract
 ```

@@ -78,10 +78,17 @@ end
 """
     @assign <T> with <Trait1, Trait2, ...>
 
-Assign traits to the data type `T`.  Translated to something like:
+Assign traits to the data type `T`.  For example:
 
+```julia
+    @assign Duck with Fly,Swim
 ```
-    <x>trait(::T) = Can<X>()
+
+is translated to something like:
+
+```julia
+    flytrait(::Duck) = CanFly()
+    swimtrait(::Duck) = CanSwim()
 ```
 
 where `x` is the name of the trait `X` in all lowercase, and `T` is the type

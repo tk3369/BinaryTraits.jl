@@ -1,9 +1,8 @@
 """
     istrait(x)
 
-Return `true` if x is a trait.  This function is expected to be extended by
-users for their trait types.  The extension is automatic when the
-[`@trait`](@ref) macro is used.
+Return `true` if x is a trait type e.g. `FlyTrait` is a trait type when
+it is defined by a statement like `@trait Fly`.
 """
 istrait(x::DataType) = false
 
