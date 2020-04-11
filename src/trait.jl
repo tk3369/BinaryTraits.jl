@@ -1,3 +1,6 @@
+
+const DEFAULT_TRAIT_SUPERTYPE = Any
+
 """
 The `prefix_map` is a Dict that maps a module to another Dict, which maps
 a trait (as a Symbol) to tuple of positive and negative prefixes for the
@@ -25,12 +28,12 @@ end
     @trait <name> [as <category>] [prefix <positive>,<negative>] [with <trait1,trait2,...>]
 
 Create a new trait type for `name` called `\$(name)Trait`.
-
-* If the `as` clause is provided, then `category` (an abstract type) will be used as the super type of the trait type.
-
-* If the `prefix` clause is provided, then it allows the user to choose different prefixes than the default ones (`Can` and `Cannot`) e.g. `prefix Is,Not` or `prefix Has,Not`.
-
-* If the `with` clause is provided, then it defines a composite trait from existing traits. Note that you must specify at least 2 traits to make a composite trait.
+* If the `as` clause is provided, then `category` (an abstract type) will be
+used as the super type of the trait type.
+* If the `prefix` clause is provided, then it allows the user to choose different
+prefixes than the default ones (`Can` and `Cannot`) e.g. `prefix Is,Not` or `prefix Has,Not`.
+* If the `with` clause is provided, then it defines a composite trait from existing
+traits. Note that you must specify at least 2 traits to make a composite trait.
 """
 macro trait(name::Symbol, args...)
     category, prefixes, traits = parse_trait_args(args)
@@ -77,9 +80,12 @@ end
 
 Assign traits to the data type `T`.  Translated to something like:
 
+```
     <x>trait(::T) = Can<X>()
+```
 
-where `x` is the name of the trait `X` in all lowercase, and `T` is the type being assigned with the trait `X`.
+where `x` is the name of the trait `X` in all lowercase, and `T` is the type
+being assigned with the trait `X`.
 """
 macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
     usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
@@ -120,7 +126,7 @@ Parse arguments for the @trait macro.
 """
 function parse_trait_args(args)
 
-    category = :Any
+    category = Symbol(DEFAULT_TRAIT_SUPERTYPE)
     prefixes = Expr(:tuple, :Can, :Cannot)
     traits = nothing
 
