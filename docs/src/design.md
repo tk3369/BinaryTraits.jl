@@ -1,7 +1,5 @@
 # Under the hood
 
-## How does it work?
-
 The underlying machinery is extremely simple. When you define a traits like `@trait Fly as Ability`, it literally expands to the following code:
 
 ```julia
@@ -11,7 +9,7 @@ struct CannotFly <: FlyTrait end
 flytrait(x) = CannotFly()
 ```
 
-As you can see, our *opinion* is to define a new abstract type called  `FlyTrait`.  Likewise, we define `CanFly` and `CannotFly` subtypes.  Finally, we define a default trait function `flytrait` that just returns an instance of `CannotFly`.  Hence, all data types are automatically disqualified from the trait by default.
+As you can see, our *opinion* is to define a new abstract type called  `FlyTrait`.  Likewise, we define `CanFly` and `CannotFly` subtypes.  Finally, we define a default trait function `flytrait` that just returns an instance of `CannotFly`.  Hence, all data types are automatically defined from the trait by default.
 
 Now, when you do `@assign Duck with Fly,Swim`, it is just translated to:
 
