@@ -27,13 +27,10 @@ end
 """
     @trait <name> [as <category>] [prefix <positive>,<negative>] [with <trait1,trait2,...>]
 
-Create a new trait type for `name` called `\$(name)Trait`.
-* If the `as` clause is provided, then `category` (an abstract type) will be
-used as the super type of the trait type.
-* If the `prefix` clause is provided, then it allows the user to choose different
-prefixes than the default ones (`Can` and `Cannot`) e.g. `prefix Is,Not` or `prefix Has,Not`.
-* If the `with` clause is provided, then it defines a composite trait from existing
-traits. Note that you must specify at least 2 traits to make a composite trait.
+Create a new trait type for `name` called `\$(name)Trait`:
+* If the `as` clause is provided, then `category` (an abstract type) will be used as the super type of the trait type.
+* If the `prefix` clause is provided, then it allows the user to choose different prefixes than the default ones (`Can` and `Cannot`) e.g. `prefix Is,Not` or `prefix Has,Not`.
+* If the `with` clause is provided, then it defines a composite trait from existing traits. Note that you must specify at least 2 traits to make a composite trait.
 """
 macro trait(name::Symbol, args...)
     category, prefixes, traits = parse_trait_args(args)

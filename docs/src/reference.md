@@ -1,4 +1,6 @@
-# Macros
+# Reference
+
+## Macros
 
 ```@docs
 @trait
@@ -6,13 +8,13 @@
 @implement
 @check
 ```
-# Functions
+## Functions
 
 ```@docs
 istrait
 ```
 
-# Types
+## Types
 
 ```@docs
 InterfaceReview

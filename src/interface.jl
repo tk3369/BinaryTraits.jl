@@ -190,12 +190,24 @@ end
 
 Register function signature for the specified `CanType` of a trait.
 You can use the [`@check`](@ref) macro to verify your implementation
-after these interface contracts are registered.
+after these interface contracts are registered.  The function
+signature only needs to specify required arguments other than
+the object itself.  Also, return type is optional and in that case
+it will be ignored by the interface checker.
 
-For example:
+For examples:
+```julia
+@implement CanFly by fly(direction::Direction, speed::Float64)
+@implement CanFly by has_wings()::Bool
+```
+
+The data types that exhibit those `CanFly` traits must implement
+the function signature with the addition of an object as first
+argument i.e.
 
 ```julia
-    @implement CanFly by fly(direction::Direction, speed::Float64)
+fly(duck::Duck, direction::Direction, speed::Float64)
+has_wings(duck::Duck)::Bool
 ```
 """
 macro implement(can_type, by, sig)
