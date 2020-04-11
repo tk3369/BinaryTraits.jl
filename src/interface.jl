@@ -1,30 +1,37 @@
-# Inteface implementation
 
 """
 The `Assignable` type represents any data type that can be associated
-with traits.  The reason why it includes `UnionAll` is to support
-parametric types that are not fully qualified e.g. `AbstractArray`.
+with traits.  For example, a `Duck` type is `Assignable` and so it may be
+assigned with traits `CanFly` and `CanSwim`.
+
+The reason why it includes `UnionAll` is to support parametric types that
+are not fully qualified e.g. `AbstractArray`.
 """
 const Assignable = Union{UnionAll, DataType}
 
 const TYPE_PLACEHOLDER = "::<Type>"
 
-
-# Keep track of each module's interfaces in a global variable.
-# By module, we can get a list of trait type (<name>Trait)
-# By trait, we can get a list of contracts.
-
 """
-The `traits_map` is a two-layer Dict.  First layer is to look up the traits
-Dict by module.  The second layer is to look up trait types from a data type.
-The trait type is expected to be the abstract type for trait e.g. <T>Trait.
+The `traits_map` is a two-layer Dict.  First layer is to map from a module to
+data types that have been assigned with traits.  The second layer maps a
+data type to the Can-type of the asigned traits.
+
+For example, a user module `ZooKeeper` may define `Duck` and `Dog` types and
+then assign them with `Fly` and `Swim` traits.  The map would look like this:
+
+```julia
+julia> BinaryTraits.traits_map[ZooKeeper]
+Dict{Union{DataType, UnionAll},Set{DataType}} with 2 entries:
+  Dog  => Set(DataType[CanSwim])
+  Duck => Set(DataType[CanSwim, CanFly])
+```
 """
 const traits_map = Dict{Module,Dict{Assignable,Set{DataType}}}()
 
 """
     traits(m::Module, T::Assignable)
 
-Returns a set of trait types that the data type `T` was assigned.
+Returns a set of Can-types that the data type `T` exhibits.
 See also [`@assign`](@ref).
 """
 function traits(m::Module, T::Assignable)
@@ -33,25 +40,27 @@ function traits(m::Module, T::Assignable)
 end
 
 """
-    assign(m::Module, T::Assignable)
+    assign(m::Module, T::Assignable, can_type::DataType)
 
-Assign data type `T` with the specified `trait`.
+Assign data type `T` with the specified Can-type of a trait.
 """
-function assign(m::Module, T::Assignable, trait::DataType)
+function assign(m::Module, T::Assignable, can_type::DataType)
     type_dict = get!(traits_map, m, Dict{Assignable,Set{DataType}}())
     traits_set = get!(type_dict, T, Set{DataType}())
-    push!(traits_set, trait)
+    push!(traits_set, can_type)
     return nothing
 end
+
+# Managing interface contracts
 
 """
     Contract
 
 A contract refers to a function defintion `func` that is required to satisfy
-a trait type `trait`. The function `func` must accepts `args` and returns `ret`.
+the Can-type of a trait. The function `func` must accepts `args` and returns `ret`.
 """
 struct Contract{T <: DataType, F <: Function, N}
-    trait::T
+    can_type::T
     func::F
     args::NTuple{N, DataType}
     ret::Union{DataType,Nothing}
@@ -60,44 +69,48 @@ end
 function Base.show(io::IO, c::Contract)
     type = Symbol(TYPE_PLACEHOLDER)
     args = "(" * join([type, c.args...], ", ::") * ")"
-    print(io, "$(c.trait) ⇢ $(c.func)$(args)")
+    print(io, "$(c.can_type) ⇢ $(c.func)$(args)")
     c.ret !== nothing && print(io, "::$(c.ret)")
 end
 
 """
-The `interface_map` is a Dict that maps a module to another Dict
-that maps a data type to a set of Contracts.
+    interface_map
+
+The `interface_map` is a two-layer Dict data structure. It maps
+a module to another Dict that maps a data type to a set of Contracts.
+
+For example, a `Duck`
 """
 const interface_map = Dict{Module,Dict{DataType,Set{Contract}}}()
 
 """
-    register(m::Module, trait::DataType, func::Function,
+    register(m::Module, can_type::DataType, func::Function,
              args::NTuple{N,DataType}, ret::DataType)
 
-Register a function `func` with the specified `trait`.
+Register a function `func` with the specified `can_type` type.
 The `func` is expected to take arguments `args` and return
 a value of type `ret`.
 """
 function register(m::Module,
-                  trait::DataType,
+                  can_type::DataType,
                   func::Function,
                   args::NTuple{N,DataType},
                   ret::Union{DataType,Nothing} = nothing) where N
     interface_dict = get!(interface_map, m, Dict{DataType,Set{Contract}}())
-    contracts = get!(interface_dict, trait, Set{Contract}())
-    push!(contracts, Contract(trait, func, args, ret))
+    contracts = get!(interface_dict, can_type, Set{Contract}())
+    push!(contracts, Contract(can_type, func, args, ret))
     return nothing
 end
 
 """
-    contracts(m::Module, trait::DataType)
+    contracts(m::Module, can_type::DataType)
 
 Returns a set of Contracts that are required to be implemented
-for `trait`.
+for `can_type`.
 """
-function contracts(m::Module, trait::DataType)
+function contracts(m::Module, can_type::DataType)
     interface_dict = get!(interface_map, m, Dict{DataType,Set{Contract}}())
-    return get(interface_dict, trait, Set{Contract}())
+    return get(interface_dict, can_type, Set{Contract}())
 end
 
 """
@@ -106,19 +119,27 @@ end
 An InterfaceReview object contains the validation results of
 an interface.
 """
-struct InterfaceReview
+@Base.kwdef struct InterfaceReview
     type::Assignable
-    implemented::Bool
+    result::Bool
+    implemented::Vector{Contract}
     misses::Vector{Contract}
 end
 
 function Base.show(io::IO, ir::T) where {T <: InterfaceReview}
-    if ir.implemented
-        print(io, "$T: $(ir.type) has fully implemented all contracts")
+    if length(ir.implemented) == length(ir.misses) == 0
+        print(io, "$T: $(ir.type) is not associated to any contracts.")
+        return nothing
+    end
+    if ir.result
+        print(io, "$T: $(ir.type) has fully implemented all contracts:")
+        for (i, c) in enumerate(ir.implemented)
+            println(io, "$(i). $c")
+        end
     else
         println(io, "$T: $(ir.type) is missing the following implementations:")
-        for c in ir.misses
-            println(io, "- $c")
+        for (i, c) in enumerate(ir.misses)
+            println(io, "$(i). $c")
         end
     end
 end
@@ -131,20 +152,25 @@ all trait functions that it was previously assigned.  See also: [`@assign`](@ref
 """
 function fully_implemented(m::Module, T::Assignable)
     all_good = true
+    implemented_contracts = Contract[]
     missing_contracts = Contract[]
-    for trait in traits(m, T)
-        for c in contracts(m, trait)
+    for can_type in traits(m, T)
+        for c in contracts(m, can_type)
             tuple_type = Tuple{T, c.args...}
             method_exists = hasmethod(c.func, tuple_type)
-            if !method_exists
-                sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
+            sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
+            if method_exists
+                push!(implemented_contracts, c)
+            else
                 VERBOSE[] && @warn "Missing implementation: $sig" c.func tuple_type
                 all_good = false
                 push!(missing_contracts, c)
             end
         end
     end
-    return InterfaceReview(T, all_good, missing_contracts)
+    return InterfaceReview(type = T, result = all_good,
+                implemented = implemented_contracts,
+                misses = missing_contracts)
 end
 
 """
@@ -162,21 +188,20 @@ macro check(T)
 end
 
 """
-    @implement <Trait> by <FunctionSignature>
+    @implement <CanType> by <FunctionSignature>
 
-Register function signature for the specified trait.
+Register function signature for the specified `CanType` of a trait.
 """
-macro implement(trait, by, sig)
+macro implement(can_type, by, sig)
 
     func_name, func_arg_names, func_arg_types, return_type =
-        parse_implement(trait, by, sig)
+        parse_implement(can_type, by, sig)
     # @info "sig" func_name func_arg_names func_arg_types
 
     # generate code
-    name = trait_type_name(trait)
     expr = quote
         function $func_name end
-        BinaryTraits.register($__module__, $name, $func_name,
+        BinaryTraits.register($__module__, $can_type, $func_name,
             ($(func_arg_types...),), $return_type)
     end
     display_expanded_code(expr)
@@ -184,9 +209,9 @@ macro implement(trait, by, sig)
 end
 
 # Parsing function for @implement macro
-function parse_implement(trait, by, sig)
+function parse_implement(can_type, by, sig)
     usage = "Invalid @implement usage."
-    if !(trait isa Symbol) || by !== :by || !(sig isa Expr)
+    if !(can_type isa Symbol) || by !== :by || !(sig isa Expr)
         throw(SyntaxError(usage))
     end
 

@@ -6,11 +6,13 @@ module SingleTrait
     @assign Bird with Fly
 
     function test()
-        @test istrait(FlyTrait)
-        @test supertype(FlyTrait) <: Any
-        @test supertype(CanFly) <: FlyTrait
-        @test supertype(CannotFly) <: FlyTrait
-        @test flytrait(Bird()) == CanFly()
+        @testset "Single Trait" begin
+            @test istrait(FlyTrait)
+            @test supertype(FlyTrait) === Any
+            @test supertype(CanFly) <: FlyTrait
+            @test supertype(CannotFly) <: FlyTrait
+            @test flytrait(Bird()) == CanFly()
+        end
     end
 end
 
@@ -23,10 +25,12 @@ module MultipleTraits
     @assign Duck with Fly,Swim
     @assign Dog with Swim
     function test()
-        @test flytrait(Dog()) == CannotFly()
-        @test swimtrait(Dog()) == CanSwim()
-        @test flytrait(Duck()) == CanFly()
-        @test swimtrait(Duck()) == CanSwim()
+        @testset "Multiple Traits" begin
+            @test flytrait(Dog()) == CannotFly()
+            @test swimtrait(Dog()) == CanSwim()
+            @test flytrait(Duck()) == CanFly()
+            @test swimtrait(Duck()) == CanSwim()
+        end
     end
 end
 
@@ -36,7 +40,9 @@ module TraitSuperType
     abstract type Mobility end
     @trait Fly as Mobility
     function test()
-        @test supertype(FlyTrait) <: Mobility
+        @testset "Super Type" begin
+            @test supertype(FlyTrait) <: Mobility
+        end
     end
 end
 
@@ -48,8 +54,10 @@ module CustomPrefixes
     next(::IsIterable, x) = iterate(x)
     next(::NotIterable, x) = :toobad
     function test()
-        @test next([1,2,3]) !== nothing
-        @test next(:hello) === :toobad
+        @testset "Custom Prefix" begin
+            @test next([1,2,3]) !== nothing
+            @test next(:hello) === :toobad
+        end
     end
 end
 
@@ -72,8 +80,10 @@ module CompositeTraits
     @trait Car prefix Is,Not with Move,CarryPassenger,FourWheels,Engine
 
     function test()
-        @test cartrait(Acura()) == IsCar()
-        @test cartrait(Tricycle()) == NotCar()
+        @testset "Composite" begin
+            @test cartrait(Acura()) == IsCar()
+            @test cartrait(Tricycle()) == NotCar()
+        end
     end
 end
 
@@ -100,25 +110,27 @@ module SyntaxErrors
     struct Dog end
 
     function test()
-        @test @testme @trait Fly as                # missing type
-        @test @testme @trait Fly as 1              # 1 is not a type
-        @test @testme @trait Fly prefix            # missing prefix tuple
-        @test @testme @trait Fly prefix 1,2        # wrong type
-        @test @testme @trait Fly prefix Is         # needs two symbols
-        @test @testme @trait Fly prefix Is,Not,Ha  # needs two symbols
-        @test @testme @trait Fly with Eat          # must have at least 2 sub-traits
-        @test @testme @trait Fly with Eat,Drink,1  # 1 is not a symbol
+        @testset "Syntax" begin
+            @test @testme @trait Fly as                # missing type
+            @test @testme @trait Fly as 1              # 1 is not a type
+            @test @testme @trait Fly prefix            # missing prefix tuple
+            @test @testme @trait Fly prefix 1,2        # wrong type
+            @test @testme @trait Fly prefix Is         # needs two symbols
+            @test @testme @trait Fly prefix Is,Not,Ha  # needs two symbols
+            @test @testme @trait Fly with Eat          # must have at least 2 sub-traits
+            @test @testme @trait Fly with Eat,Drink,1  # 1 is not a symbol
 
-        @test @testme @assign Dog with 1           # 1 is not a symbol
+            @test @testme @assign Dog with 1           # 1 is not a symbol
+        end
     end
 end
 
 module Interfaces
     using BinaryTraits, Test
     @trait Fly
-    @implement Fly by liftoff()
-    @implement Fly by speed(resistence::Float64)::Float64
-    @implement Fly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
+    @implement CanFly by liftoff()
+    @implement CanFly by speed(resistence::Float64)::Float64
+    @implement CanFly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
 
     struct Bird end
     @assign Bird with Fly
@@ -130,16 +142,29 @@ module Interfaces
     @assign Duck with Fly
     liftoff(::Duck) = "hi ho!"
 
-    function test()
-        bird_check = @check(Bird)
-        @test bird_check.fully_implemented === true
+    @trait Pretty
+    struct Flamingo end
+    @assign Flamingo with Pretty
 
-        duck_check = @check(Duck)
-        @test duck_check.fully_implemented === false
+    function test()
+        @testset "Interface" begin
+            bird_check = @check(Bird)
+            @test bird_check.result == true
+            @test length(bird_check.misses) == 0
+
+            duck_check = @check(Duck)
+            @test duck_check.result == false
+            @test length(duck_check.misses) == 2
+
+            flamingo_check = @check Flamingo
+            @test flamingo_check.result == true
+            @test flamingo_check.implemented |> length == 0
+            @test flamingo_check.misses |> length == 0
+        end
     end
 end
 
-@testset "My Tests" begin
+@testset "BinaryTraits Tests" begin
     import .SingleTrait;        SingleTrait.test()
     import .MultipleTraits;     MultipleTraits.test()
     import .TraitSuperType;     TraitSuperType.test()
