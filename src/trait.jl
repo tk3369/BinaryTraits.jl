@@ -78,14 +78,14 @@ end
 Assign traits to the data type `T`.  For example:
 
 ```julia
-    @assign Duck with Fly,Swim
+@assign Duck with Fly,Swim
 ```
 
 is translated to something like:
 
 ```julia
-    flytrait(::Duck) = CanFly()
-    swimtrait(::Duck) = CanSwim()
+flytrait(::Duck) = CanFly()
+swimtrait(::Duck) = CanSwim()
 ```
 
 where `x` is the name of the trait `X` in all lowercase, and `T` is the type
