@@ -51,22 +51,17 @@ implement a `fly` method.  We can define that interface as follows:
 Then, to make sure that our implementation is correct, we can use the `@check`
 macro as shown below:
 
-```
+```julia
 julia> @check Duck
 InterfaceReview(Duck) missing the following implementations:
 1. CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
 ```
 
-So, let's implement the method and check again:
+Now, let's implement the method and check again:
 
 ```julia
-fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
-```
+julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
 
-If we check again then it looks good!
-
-```
-julia> @check Duck
 julia> @check Duck
 InterfaceReview(Duck) has fully implemented these contracts:
 1. CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
