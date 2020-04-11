@@ -3,7 +3,7 @@ using BinaryTraits
 
 makedocs(
     modules = [BinaryTraits],
-    sitename="BinaryTraits",
+    sitename="BinaryTraits.jl",
     pages = [
         "Introduction" => "index.md",
         "User Guide" => "guide.md",
