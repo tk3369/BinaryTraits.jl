@@ -164,6 +164,34 @@ module Interfaces
     end
 end
 
+module Verbose
+    using BinaryTraits, Test, Logging
+
+    # Capture output and make sure that `expected` appears in the log
+    # when expression `ex` is evaluated
+    macro testme(expected, ex)
+        esc(quote
+            buf = IOBuffer()
+            with_logger(ConsoleLogger(buf)) do
+                @macroexpand($ex)
+            end
+            s = String(take!(buf))
+            @test occursin($expected, s)
+        end)
+    end
+
+    struct Cat end
+
+    # Testing verbose mode
+    function test()
+        BinaryTraits.set_verbose(true)
+        @testset "Verbose" begin
+            @testme "struct CanScratch" @trait Scratch
+            @testme "scratchtrait(::Cat) = CanScratch()" @assign Cat with Scratch
+        end
+    end
+end
+
 @testset "BinaryTraits Tests" begin
     import .SingleTrait;        SingleTrait.test()
     import .MultipleTraits;     MultipleTraits.test()
@@ -172,4 +200,5 @@ end
     import .CompositeTraits;    CompositeTraits.test()
     import .SyntaxErrors;       SyntaxErrors.test()
     import .Interfaces;         Interfaces.test()
+    import .Verbose;            Verbose.test()
 end
