@@ -11,10 +11,9 @@ The underlying mechanism is just [Holy Traits](https://ahsmart.com/pub/holy-trai
 
 A design consideration is to support only binary traits, hence the name of the package.  Every trait is defined as whether you can do something or not.  I believe enforcing this restriction makes everything simpler and easier to understand.
 
-Features
+## Features
+
 * Define traits and assigning them to your own data types
 * Define composite traits that exhibits all of the underlying traits
 * Define interface contracts for a trait
 * Check if your data type fully implements all interface contracts
-
-
