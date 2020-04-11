@@ -1,14 +1,29 @@
 # User Guide
 
-## Choosing your own prefix for trait types
+## Using the @trait macro
+
+The syntax of `@trait` macro is as follows:
+
+```julia
+@trait T [as <category>] [prefix <positive>,<negative>] [with <trait1>,<trait2>,...]
+```
+
+* `<positive>` and `<negative>` are words that indicates whether a data type exhibits the trait.
+* `<trait1>`, `<trait2>`, etc. are used to define composite traits.
+
+### Choosing your own super-type of the trait type
+
+The as-clause is used to specify the super-type of the trait type.
+If the clause is missing, the super-type is defaulted to `Any`.
+
+### Choosing your own prefix for trait types
 
 When you define a trait using verbs like *Fly* or *Swim* in the above, it makes sense to define trait types with `Can` and `Cannot` prefixes.  But, what if you want to define a trait using a noun or an adjective?
 
-In that case, you can define your trait with the `prefix` clause:
+In that case, you can define your trait with the `prefix` clause.  For example:
 
 ```julia
-abstract type Collection end
-@trait Iterable as Collection prefix Is,Not
+@trait Iterable prefix Is,Not
 ```
 
 In that case, the following types will be defined instead:
@@ -19,7 +34,7 @@ NotIterable
 
 This should make your code a lot more readable.
 
-## Making composite traits
+### Making composite traits
 
 Sometimes we really want to compose traits and use it directly for dispatch.  In that case, we just need to use the `with` clause:
 
@@ -42,9 +57,22 @@ spank(Duck())   # "Flying high and diving deep"
 spank(Dog())    # "Too Bad"
 ```
 
+## Assigning traits to your data types
+
+Once you define your favorite traits, you may assign any data type to these traits.
+
+For example:
+```
+@trait Wheels prefix Has,No
+@trait Engine prefix Has,No
+
+struct Car end
+@assign Car with Engine,Wheels
+```
+
 ## How does it work?
 
-The underlying machinery is extremely simple. Using the above example, when you define a traits like `@trait Fly as Ability`, it literally expands to the following code:
+The underlying machinery is extremely simple. When you define a traits like `@trait Fly as Ability`, it literally expands to the following code:
 
 ```julia
 abstract type FlyTrait <: Ability end
