@@ -3,7 +3,12 @@ using BinaryTraits
 
 makedocs(
     modules = [BinaryTraits],
-    sitename="BinaryTraits"
+    sitename="BinaryTraits",
+    pages = [
+        "Introduction" => "intro.md",
+        "User Guide" => "guide.md",
+        "Reference" => "reference.md",
+    ]
 )
 
 deploydocs(

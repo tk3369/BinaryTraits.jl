@@ -22,6 +22,4 @@ istrait
 
 ```@docs
 InterfaceReview
-Assignable
-Contract
 ```
