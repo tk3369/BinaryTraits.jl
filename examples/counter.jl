@@ -4,8 +4,8 @@ using Revise, BinaryTraits
 # https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration-1
 import Base: iterate
 @trait Iterable prefix Is,Not
-@implement Iterable by iterate()::Any
-@implement Iterable by iterate(state::Any)::Any
+@implement IsIterable by iterate()::Any
+@implement IsIterable by iterate(state::Any)::Any
 
 # In my module, I have a struct that I wish to implement Iterable interface
 struct Counter
@@ -33,7 +33,7 @@ sum(x for x in Counter(3))
 # Create new Length trait
 import Base: length
 @trait Length prefix Has,No
-@implement Length by length()::Int
+@implement HasLength by length()::Int
 
 # Associate my type to the Length trait
 @assign Counter with Length
