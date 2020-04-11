@@ -142,7 +142,7 @@ module Interfaces
     @assign Duck with Fly
     liftoff(::Duck) = "hi ho!"
 
-    @trait Pretty
+    @trait Pretty prefix Is,Not
     struct Flamingo end
     @assign Flamingo with Pretty
 
@@ -160,6 +160,19 @@ module Interfaces
             @test flamingo_check.result == true
             @test flamingo_check.implemented |> length == 0
             @test flamingo_check.misses |> length == 0
+
+            # test `show` function
+            buf = IOBuffer()
+            contains(s) = x -> occursin(s, x)
+
+            show(buf, flamingo_check)
+            @test buf |> take! |> String |> contains("not associated to any contracts")
+
+            show(buf, bird_check)
+            @test buf |> take! |> String |> contains("fully implemented")
+
+            show(buf, duck_check)
+            @test buf |> take! |> String |> contains("missing")
         end
     end
 end
