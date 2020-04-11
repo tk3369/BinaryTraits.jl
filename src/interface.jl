@@ -1,17 +1,18 @@
 
 """
-The `Assignable` type represents any data type that can be associated
-with traits.  For example, a `Duck` type is `Assignable` and so it may be
-assigned with traits `CanFly` and `CanSwim`.
+    Assignable
 
-The reason why it includes `UnionAll` is to support parametric types that
-are not fully qualified e.g. `AbstractArray`.
+`Assignable` represents any data type that can be associated with traits.
+It essentially covers all data types including parametric types e.g. `AbstractArray`
 """
 const Assignable = Union{UnionAll, DataType}
 
+# used for display purpose only
 const TYPE_PLACEHOLDER = "::<Type>"
 
 """
+    traits_map
+
 The `traits_map` is a two-layer Dict.  First layer is to map from a module to
 data types that have been assigned with traits.  The second layer maps a
 data type to the Can-type of the asigned traits.
@@ -29,7 +30,7 @@ Dict{Union{DataType, UnionAll},Set{DataType}} with 2 entries:
 const traits_map = Dict{Module,Dict{Assignable,Set{DataType}}}()
 
 """
-    traits(m::Module, T::Assignable)
+    traits([m::Module], T::Assignable)
 
 Returns a set of Can-types that the data type `T` exhibits.
 See also [`@assign`](@ref).
@@ -56,10 +57,16 @@ end
 # Managing interface contracts
 
 """
-    Contract
+    Contract{T <: DataType, F <: Function, N}
 
 A contract refers to a function defintion `func` that is required to satisfy
 the Can-type of a trait. The function `func` must accepts `args` and returns `ret`.
+
+# Fields
+- `can_type`: can-type of a trait e.g. `CanFly`
+- `func`: function that must be implemented to satisfy this trait
+- `args`: arguments of the function `func`
+- `ret`: return type of the function `func`
 """
 struct Contract{T <: DataType, F <: Function, N}
     can_type::T
@@ -118,10 +125,9 @@ end
 """
     InterfaceReview
 
-An InterfaceReview object contains the validation results of
-an interface.
+An InterfaceReview object contains the validation results of an interface.
 
-Fields:
+# Fields
 - `type`: the type being checked
 - `result`: true if the type fully implements all required contracts
 - `implemented`: an array of implemented contracts

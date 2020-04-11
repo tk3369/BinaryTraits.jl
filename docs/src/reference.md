@@ -11,11 +11,14 @@
 ## Functions
 
 ```@docs
+traits
 istrait
 ```
 
 ## Types
 
 ```@docs
-InterfaceReview
+BinaryTraits.InterfaceReview
+BinaryTraits.Assignable
+BinaryTraits.Contract
 ```
