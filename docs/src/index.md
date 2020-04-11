@@ -4,6 +4,7 @@ Every motivation starts with an example.  In this page, we cover the following t
 2. Assigning data types with traits
 3. Specifying an interface for traits
 4. Checking if a data type fully implements all contracts from its traits
+5. Applying Holy Traits pattern
 
 # Example: tickling a duck and a dog
 
@@ -14,6 +15,7 @@ abstract type Ability end
 @trait Swim as Ability
 @trait Fly as Ability
 ```
+
 
 Consider the following animal types. We can assign them traits quite easily:
 
@@ -41,6 +43,8 @@ tickle(Dog())   # "Stuck laughing"
 tickle(Duck())  # "Flying high and diving deep"
 ```
 
+## Working with interfaces
+
 What if we want to enforce an interface? e.g. animals that can fly must
 implement a `fly` method.  We can define that interface as follows:
 
@@ -66,3 +70,21 @@ julia> @check Duck
 InterfaceReview(Duck) has fully implemented these contracts:
 1. CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
 ```
+
+## Applying holy traits
+
+If we would just implement interface contracts directly then it can be too specific
+for what it is worth.  If we have 100 flying animals, I shouldn't need to define
+100 interface methods for the 100 concrete types.
+
+That's how Holy Trais pattern kicks in.  Rather than implementing the `fly` method
+as shown in the previous section, we could have implemented the following two
+functions instead:
+
+```julia
+fly(::CanFly, x, direction::Float64, altitude::Float64) = "Having fun!"
+fly(x, direction::Float64, altitude::Float64) = fly(flytrait(x), x, direction, altitude)
+```
+
+By definition, the `CanFly` trait should not be animal specific.  Hence generalizing
+the implementation with the `CanFly` argument makes perfect sense.
