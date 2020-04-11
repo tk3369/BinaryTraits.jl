@@ -4,9 +4,7 @@ using MacroTools
 
 export @trait, @assign
 export @implement, @check
-export istrait
-
-export InterfaceReview
+export traits, istrait
 
 include("misc.jl")
 include("utils.jl")

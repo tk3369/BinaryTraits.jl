@@ -39,6 +39,8 @@ function traits(m::Module, T::Assignable)
     return get!(trait_dict, T, Set{DataType}())
 end
 
+traits(T::Assignable) = traits(parentmodule(T), T)
+
 """
     assign(m::Module, T::Assignable, can_type::DataType)
 
