@@ -166,7 +166,7 @@ module Interfaces
             contains(s) = x -> occursin(s, x)
 
             show(buf, flamingo_check)
-            @test buf |> take! |> String |> contains("not associated to any contracts")
+            @test buf |> take! |> String |> contains("does not need to implement any interface contracts")
 
             show(buf, bird_check)
             @test buf |> take! |> String |> contains("fully implemented")
