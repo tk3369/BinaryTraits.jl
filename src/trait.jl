@@ -100,10 +100,9 @@ macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
                 Expr(:call, trait_function, Expr(:(::), T)),
                 Expr(:call, can_type)))
 
-        # e.g. BinaryTraits.assign(MyModule, Duck, FlyTrait)
-        trait_type = trait_type_name(t)
+        # e.g. BinaryTraits.assign(MyModule, Duck, CanFly)
         push!(expressions, :(
-            BinaryTraits.assign($__module__, $T, $trait_type)
+            BinaryTraits.assign($__module__, $T, $can_type)
         ))
     end
     expr = quote

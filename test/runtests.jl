@@ -116,9 +116,9 @@ end
 module Interfaces
     using BinaryTraits, Test
     @trait Fly
-    @implement Fly by liftoff()
-    @implement Fly by speed(resistence::Float64)::Float64
-    @implement Fly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
+    @implement CanFly by liftoff()
+    @implement CanFly by speed(resistence::Float64)::Float64
+    @implement CanFly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
 
     struct Bird end
     @assign Bird with Fly
@@ -132,10 +132,12 @@ module Interfaces
 
     function test()
         bird_check = @check(Bird)
-        @test bird_check.fully_implemented === true
+        @test bird_check.result == true
+        @test length(bird_check.misses) == 0
 
         duck_check = @check(Duck)
-        @test duck_check.fully_implemented === false
+        @test duck_check.result == false
+        @test length(duck_check.misses) == 2
     end
 end
 
