@@ -118,6 +118,12 @@ end
 
 An InterfaceReview object contains the validation results of
 an interface.
+
+Fields:
+- `type`: the type being checked
+- `result`: true if the type fully implements all required contracts
+- `implemented`: an array of implemented contracts
+- `misses`: an array of unimplemented contracts
 """
 @Base.kwdef struct InterfaceReview
     type::Assignable
