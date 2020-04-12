@@ -7,7 +7,8 @@ module SingleTrait
 
     function test()
         @testset "Single Trait" begin
-            @test istrait(FlyTrait)
+            @test istrait(FlyTrait) == true
+            @test istrait(Int) == false
             @test supertype(FlyTrait) === Any
             @test supertype(CanFly) <: FlyTrait
             @test supertype(CannotFly) <: FlyTrait
@@ -166,13 +167,17 @@ module Interfaces
             contains(s) = x -> occursin(s, x)
 
             show(buf, flamingo_check)
-            @test buf |> take! |> String |> contains("does not need to implement any interface contracts")
+            @test buf |> take! |> String |> contains("has no interface contract requirements")
 
             show(buf, bird_check)
-            @test buf |> take! |> String |> contains("fully implemented")
+            @test buf |> take! |> String |> contains("has implemented")
 
             show(buf, duck_check)
-            @test buf |> take! |> String |> contains("missing")
+            @test buf |> take! |> String |> contains("is missing")
+
+            # Bird is assigned with 1 FlyTrait and that requires 3 contracts
+            @test required_contracts(Bird) |> length == 1
+            @test required_contracts(Bird)[1] |> last |> length == 3
         end
     end
 end

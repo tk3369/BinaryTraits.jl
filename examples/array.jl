@@ -1,4 +1,5 @@
 # Let's play with regular julia types
+using Revise, BinaryTraits
 
 # First, define traits.
 import Base: iterate
@@ -28,3 +29,10 @@ julia> @check Int1D
 BinaryTraits.InterfaceReview(Array{Int64,1}) has fully implemented all interface contracts
 =#
 
+# Which contracts are required?
+#=
+julia> BinaryTraits.required_contracts(Int1D)
+2-element Array{Pair{DataType,Set{BinaryTraits.Contract}},1}:
+   LengthTrait => Set([HasLength ⇢ length(::<Type>)::Int64])
+ IterableTrait => Set([IsIterable ⇢ iterate(::<Type>, ::Any)::Any, IsIterable ⇢ iterate(::<Type>)::Any])
+=#

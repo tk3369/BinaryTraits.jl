@@ -57,8 +57,10 @@ macro as shown below:
 
 ```julia
 julia> @check Duck
-InterfaceReview(Duck) missing the following implementations:
-1. CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
+┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Duck, ::Float64, ::Float64)::Nothing
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:169
+❌ Duck is missing these implementations:
+1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
 ```
 
 Now, let's implement the method and check again:
@@ -67,24 +69,27 @@ Now, let's implement the method and check again:
 julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
 
 julia> @check Duck
-InterfaceReview(Duck) has fully implemented these contracts:
-1. CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
+✅ Duck has implemented:
+1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
 ```
 
 ## Applying holy traits
 
-If we would just implement interface contracts directly then it can be too specific
-for what it is worth.  If we have 100 flying animals, I shouldn't need to define
+If we would just implement interface contracts directly on concrete types then it can
+be too specific for what it is worth.  If we have 100 flying animals, I shouldn't need to define
 100 interface methods for the 100 concrete types.
 
 That's how Holy Trais pattern kicks in.  Rather than implementing the `fly` method
-as shown in the previous section, we could have implemented the following two
+for `Duck` as shown in the previous section, we could have implemented the following
 functions instead:
 
 ```julia
-fly(::CanFly, x, direction::Float64, altitude::Float64) = "Having fun!"
 fly(x, direction::Float64, altitude::Float64) = fly(flytrait(x), x, direction, altitude)
+fly(::CanFly, x, direction::Float64, altitude::Float64) = "Having fun!"
+fly(::CannotFly, x, direction::Float64, altitude::Float64) = "Too bad..."
 ```
 
-By definition, the `CanFly` trait should not be animal specific.  Hence generalizing
-the implementation with the `CanFly` argument makes perfect sense.
+The first function determines whether the object exhibits `CanFly` or `CannotFly` trait
+and dispatch to the proper function. We did not specify the type of the `x` argument
+but in reality if we are dealing with the animal kingdom only then we can define an
+abstract type `Animal` and apply holy traits to all `Animal` objects only.
