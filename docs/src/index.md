@@ -10,36 +10,39 @@ Every motivation starts with an example.  In this page, we cover the following t
 
 Suppose that we are modeling the ability of animals.  So we can define traits as follows:
 
-```julia
+```@example ex
 abstract type Ability end
 @trait Swim as Ability
 @trait Fly as Ability
+nothing # hide
 ```
 
 Consider the following animal types. We can assign them traits quite easily:
 
-```julia
+```@example ex
 struct Dog end
 struct Duck end
-
 @assign Dog with Swim
 @assign Duck with Swim,Fly
+nothing # hide
 ```
 
 Next, how do you dispatch by traits?  You just follow the Holy Trait pattern:
 
-```julia
+```@example ex
 tickle(x) = tickle(flytrait(x), swimtrait(x), x)
 tickle(::CanFly, ::CanSwim, x) = "Flying high and diving deep"
 tickle(::CanFly, ::CannotSwim, x) = "Flying away"
 tickle(::Ability, ::Ability, x) = "Stuck laughing"
+nothing # hide
 ```
 
 *Voila!*
 
-```julia
+```@example ex
 tickle(Dog())   # "Stuck laughing"
 tickle(Duck())  # "Flying high and diving deep"
+nothing # hide
 ```
 
 ## Working with interfaces
@@ -47,29 +50,22 @@ tickle(Duck())  # "Flying high and diving deep"
 What if we want to enforce an interface? e.g. animals that can fly must
 implement a `fly` method.  We can define that interface as follows:
 
-```julia
+```@example ex
 @implement CanFly by fly(direction::Float64, altitude::Float64)::Nothing
 ```
 
 Then, to make sure that our implementation is correct, we can use the `check`
 function as shown below:
 
-```julia
-julia> check(Duck)
-┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Duck, ::Float64, ::Float64)::Nothing
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:169
-❌ Duck is missing these implementations:
-1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
+```@repl ex
+check(Duck)
 ```
 
 Now, let's implement the method and check again:
 
-```julia
-julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
-
-julia> check(Duck)
-✅ Duck has implemented:
-1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
+```@repl
+fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
+check(Duck)
 ```
 
 ## Applying holy traits
