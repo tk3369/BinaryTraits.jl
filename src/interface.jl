@@ -13,43 +13,38 @@ const TYPE_PLACEHOLDER = "::<Type>"
 """
     traits_map
 
-The `traits_map` is a two-layer Dict.  First layer is to map from a module to
-data types that have been assigned with traits.  The second layer maps a
-data type to the Can-type of the asigned traits.
+The `traits_map` maps a data type to the Can-type of the asigned traits.
 
-For example, a user module `ZooKeeper` may define `Duck` and `Dog` types and
-then assign them with `Fly` and `Swim` traits.  The map would look like this:
+For example, the `Duck` and `Dog` types and then assign them with `Fly`
+and `Swim` traits.  The map would look like this:
 
 ```julia
-julia> BinaryTraits.traits_map[ZooKeeper]
+julia> BinaryTraits.traits_map
 Dict{Union{DataType, UnionAll},Set{DataType}} with 2 entries:
   Dog  => Set(DataType[CanSwim])
   Duck => Set(DataType[CanSwim, CanFly])
 ```
 """
-const traits_map = Dict{Module,Dict{Assignable,Set{DataType}}}()
+const traits_map = Dict{Assignable,Set{DataType}}()
 
 """
-    traits([m::Module], T::Assignable)
+    traits(T::Assignable)
 
 Returns a set of Can-types that the data type `T` exhibits.
 See also [`@assign`](@ref).
 """
-function traits(m::Module, T::Assignable)
-    trait_dict = get!(traits_map, m, Dict{Assignable,Set{DataType}}())
-    return get!(trait_dict, T, Set{DataType}())
+function traits(T::Assignable)
+    return get!(traits_map, T, Set{DataType}())
 end
 
-traits(T::Assignable) = traits(parentmodule(T), T)
 
 """
-    assign(m::Module, T::Assignable, can_type::DataType)
+    assign(T::Assignable, can_type::DataType)
 
 Assign data type `T` with the specified Can-type of a trait.
 """
-function assign(m::Module, T::Assignable, can_type::DataType)
-    type_dict = get!(traits_map, m, Dict{Assignable,Set{DataType}}())
-    traits_set = get!(type_dict, T, Set{DataType}())
+function assign(T::Assignable, can_type::DataType)
+    traits_set = get!(traits_map, T, Set{DataType}())
     push!(traits_set, can_type)
     return nothing
 end
@@ -85,41 +80,34 @@ end
 """
     interface_map
 
-The `interface_map` is a two-layer Dict data structure. It maps
-a module to another Dict that maps a data type to a set of Contracts.
-
-For example, a `Duck`
+The `interface_map` maps a data type to a set of Contracts.
 """
-const interface_map = Dict{Module,Dict{DataType,Set{Contract}}}()
+const interface_map = Dict{DataType,Set{Contract}}()
 
 """
-    register(m::Module, can_type::DataType, func::Function,
-             args::NTuple{N,DataType}, ret::DataType)
+    register(can_type::DataType, func::Function, args::NTuple{N,DataType}, ret::DataType) where N
 
 Register a function `func` with the specified `can_type` type.
 The `func` is expected to take arguments `args` and return
 a value of type `ret`.
 """
-function register(m::Module,
-                  can_type::DataType,
+function register(can_type::DataType,
                   func::Function,
                   args::NTuple{N,DataType},
                   ret::Union{DataType,Nothing} = nothing) where N
-    interface_dict = get!(interface_map, m, Dict{DataType,Set{Contract}}())
-    contracts = get!(interface_dict, can_type, Set{Contract}())
+    contracts = get!(interface_map, can_type, Set{Contract}())
     push!(contracts, Contract(can_type, func, args, ret))
     return nothing
 end
 
 """
-    contracts(m::Module, can_type::DataType)
+    contracts(can_type::DataType)
 
 Returns a set of Contracts that are required to be implemented
 for `can_type`.
 """
-function contracts(m::Module, can_type::DataType)
-    interface_dict = get!(interface_map, m, Dict{DataType,Set{Contract}}())
-    return get(interface_dict, can_type, Set{Contract}())
+function contracts(can_type::DataType)
+    return get(interface_map, can_type, Set{Contract}())
 end
 
 """
@@ -156,17 +144,17 @@ function Base.show(io::IO, ir::T) where {T <: InterfaceReview}
 end
 
 """
-    fully_implemented(m::Module, T::Assignable)
+    fully_implemented(T::Assignable)
 
-Check if the data type `T` defined in module `m` has fully implemented
-all trait functions that it was previously assigned.  See also: [`@assign`](@ref).
+Check if the data type `T` has fully implemented all trait functions that it was
+previously assigned.  See also: [`@assign`](@ref).
 """
-function fully_implemented(m::Module, T::Assignable)
+function fully_implemented(T::Assignable)
     all_good = true
     implemented_contracts = Contract[]
     missing_contracts = Contract[]
-    for can_type in traits(m, T)
-        for c in contracts(m, can_type)
+    for can_type in traits(T)
+        for c in contracts(can_type)
             tuple_type = Tuple{T, c.args...}
             method_exists = hasmethod(c.func, tuple_type)
             sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
@@ -192,7 +180,7 @@ assigned traits.  Return an [`InterfaceReview`](@ref) object.
 """
 macro check(T)
     return esc(quote
-        BinaryTraits.fully_implemented($__module__, $T)
+        BinaryTraits.fully_implemented($T)
     end)
 end
 
