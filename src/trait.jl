@@ -64,8 +64,8 @@ macro trait(name::Symbol, args...)
         abstract type $trait_type <: $category end
         struct $can_type <: $trait_type end
         struct $cannot_type <: $trait_type end
-        BinaryTraits.istrait(::Type{$trait_type}) = true
         $(default_trait_function)(x::Any) = $default_expr
+        BinaryTraits.istrait(::Type{$trait_type}) = true
         nothing
     end
     display_expanded_code(expr)
@@ -112,7 +112,7 @@ macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
 
         # e.g. BinaryTraits.assign(MyModule, Duck, CanFly)
         push!(expressions, :(
-            BinaryTraits.assign($__module__, $T, $can_type)
+            BinaryTraits.assign($T, $can_type)
         ))
     end
     expr = quote

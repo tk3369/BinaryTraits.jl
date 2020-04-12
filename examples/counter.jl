@@ -17,18 +17,36 @@ end
 
 # In my module initialization function, I can validate my implementation.
 @check Counter
+#=
+julia> @check Counter
+BinaryTraits.InterfaceReview(Counter) is missing the following implementations:
+1. IsIterable ⇢ iterate(::<Type>)::Any
+2. IsIterable ⇢ iterate(::<Type>, ::Any)::Any
+=#
 
 # now define iterate function
 Base.iterate(c::Counter, state = 0) = c.n > state ? (state+1,state+1) : nothing
 
 # now fully implemented
 @check Counter
+#=
+julia> @check Counter
+BinaryTraits.InterfaceReview(Counter) has fully implemented all interface contracts
+=#
 
 # ok to use
 sum(x for x in Counter(3))
+#=
+julia> sum(x for x in Counter(3))
+6
+=#
 
 # But array comprehension is broken without a length
 [x for x in Counter(3)]
+#=
+julia> [x for x in Counter(3)]
+ERROR: MethodError: no method matching length(::Counter)
+=#
 
 # Create new Length trait
 import Base: length
@@ -42,6 +60,31 @@ import Base: length
 Base.length(c::Counter) = c.n
 @check Counter  # all good
 
-[x for x in Counter(3)]
+[x for x in Counter(3)]  # Hooray!
+#=
+julia> [x for x in Counter(3)]  # Hooray!
+3-element Array{Int64,1}:
+ 1
+ 2
+ 3
+=#
 
+# What have we done so far?
+traits(Counter)
+#=
+julia> traits(Counter)
+Set{DataType} with 2 elements:
+  HasLength
+  IsIterable
+=#
+
+@trait Comprehensible prefix Is,Not with Iterable,Length
+@assign Counter with Comprehensible
+
+# Is a Counter comprehensible?  It better be!
+comprehensibletrait(Counter(2))
+#=
+julia> comprehensibletrait(Counter(2))
+IsComprehensible()
+=#
 
