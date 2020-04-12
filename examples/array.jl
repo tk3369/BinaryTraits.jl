@@ -23,16 +23,20 @@ Set{DataType} with 2 elements:
 =#
 
 # Do we have a good implementation?
-@check Int1D
+check(Int1D)
 #=
-julia> @check Int1D
-BinaryTraits.InterfaceReview(Array{Int64,1}) has fully implemented all interface contracts
+julia> check(Int1D)
+✅ Array{Int64,1} has implemented:
+1. LengthTrait: HasLength ⇢ length(::<Type>)::Int64
+2. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+3. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
 =#
 
 # Which contracts are required?
+required_contracts(Int1D)
 #=
-julia> BinaryTraits.required_contracts(Int1D)
+julia> required_contracts(Int1D)
 2-element Array{Pair{DataType,Set{BinaryTraits.Contract}},1}:
-   LengthTrait => Set([HasLength ⇢ length(::<Type>)::Int64])
- IterableTrait => Set([IsIterable ⇢ iterate(::<Type>, ::Any)::Any, IsIterable ⇢ iterate(::<Type>)::Any])
+   LengthTrait => Set([LengthTrait: HasLength ⇢ length(::<Type>)::Int64])
+ IterableTrait => Set([IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any, IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any])
 =#

@@ -149,15 +149,15 @@ module Interfaces
 
     function test()
         @testset "Interface" begin
-            bird_check = @check(Bird)
+            bird_check = check(Bird)
             @test bird_check.result == true
             @test length(bird_check.misses) == 0
 
-            duck_check = @check(Duck)
+            duck_check = check(Duck)
             @test duck_check.result == false
             @test length(duck_check.misses) == 2
 
-            flamingo_check = @check Flamingo
+            flamingo_check = check(Flamingo)
             @test flamingo_check.result == true
             @test flamingo_check.implemented |> length == 0
             @test flamingo_check.misses |> length == 0

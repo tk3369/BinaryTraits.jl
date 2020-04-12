@@ -2,9 +2,8 @@ module BinaryTraits
 
 using MacroTools
 
-export @trait, @assign
-export @implement, @check
-export traits, istrait, required_contracts
+export @trait, @assign, @implement
+export traits, istrait, check, required_contracts
 
 include("misc.jl")
 include("utils.jl")

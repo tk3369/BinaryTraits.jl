@@ -16,7 +16,6 @@ abstract type Ability end
 @trait Fly as Ability
 ```
 
-
 Consider the following animal types. We can assign them traits quite easily:
 
 ```julia
@@ -52,11 +51,11 @@ implement a `fly` method.  We can define that interface as follows:
 @implement CanFly by fly(direction::Float64, altitude::Float64)::Nothing
 ```
 
-Then, to make sure that our implementation is correct, we can use the `@check`
-macro as shown below:
+Then, to make sure that our implementation is correct, we can use the `check`
+function as shown below:
 
 ```julia
-julia> @check Duck
+julia> check(Duck)
 ┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Duck, ::Float64, ::Float64)::Nothing
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:169
 ❌ Duck is missing these implementations:
@@ -68,7 +67,7 @@ Now, let's implement the method and check again:
 ```julia
 julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
 
-julia> @check Duck
+julia> check(Duck)
 ✅ Duck has implemented:
 1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
 ```

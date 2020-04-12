@@ -6,14 +6,14 @@
 @trait
 @assign
 @implement
-@check
 ```
 ## Functions
 
 ```@docs
 traits
-istrait
+check
 required_contracts
+istrait
 ```
 
 ## Types

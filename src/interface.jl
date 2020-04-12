@@ -149,12 +149,12 @@ function Base.show(io::IO, ir::InterfaceReview)
 end
 
 """
-    fully_implemented(T::Assignable)
+    check(T::Assignable)
 
 Check if the data type `T` has fully implemented all trait functions that it was
 previously assigned.  See also: [`@assign`](@ref).
 """
-function fully_implemented(T::Assignable)
+function check(T::Assignable)
     all_good = true
     implemented_contracts = Contract[]
     missing_contracts = Contract[]
@@ -178,18 +178,6 @@ function fully_implemented(T::Assignable)
 end
 
 """
-    @check <T>
-
-Check whether the data type `T` fully implements all of its
-assigned traits.  Return an [`InterfaceReview`](@ref) object.
-"""
-macro check(T)
-    return esc(quote
-        BinaryTraits.fully_implemented($T)
-    end)
-end
-
-"""
     required_contracts(T::Assignable)
 
 Return an array of pairs of trait and the set of contracts required for that trait.
@@ -200,7 +188,7 @@ required_contracts(T::Assignable) = [supertype(t) => contracts(t) for t in trait
     @implement <CanType> by <FunctionSignature>
 
 Register function signature for the specified `CanType` of a trait.
-You can use the [`@check`](@ref) macro to verify your implementation
+You can use the [`check`](@ref) macro to verify your implementation
 after these interface contracts are registered.  The function
 signature only needs to specify required arguments other than
 the object itself.  Also, return type is optional and in that case
