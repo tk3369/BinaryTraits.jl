@@ -19,7 +19,16 @@ The as-clause is used to specify the super-type of the trait type.
 If the clause is missing, the super-type is defaulted to `Any`.
 
 This may be useful when you want to group a set of traits under the
-same "umbrella".
+same "umbrella".  The following are valid syntaxes:
+
+```@example guide
+using BinaryTraits
+
+abstract type Movement end
+
+@trait Fly
+@trait Dive as Movement
+```
 
 ### Specifying custom Prefixes
 
@@ -46,7 +55,7 @@ This should make your code a lot more readable.
 Sometimes we really want to compose traits and use it directly for dispatch.  In that case, we just
 need to use the `with` clause:
 
-```julia
+```@example guide
 @trait Fly
 @trait Swim
 @trait FlySwim with Fly,Swim
@@ -54,7 +63,7 @@ need to use the `with` clause:
 
 Then, we can just dispatch as follows:
 
-```julia
+```@example guide
 spank(x) = spank(flyswimtrait(x), x)
 spank(::CanFlySwim, x) = "Flying high and diving deep"
 spank(::CannotFlySwim, x) = "Too Bad"
@@ -62,15 +71,17 @@ spank(::CannotFlySwim, x) = "Too Bad"
 
 ### Assigning traits
 
-Once you define your favorite traits, you may assign any data type to these traits.
+Once you define your favorite traits, you may assign any data type to any traits.
+The syntax of the assignment is as follows:
 
-For example:
+```julia
+@assign <DataType> with <trait1>,<trait2>,...
 ```
-@trait Wheels prefix Has,No
-@trait Engine prefix Has,No
 
-struct Car end
-@assign Car with Engine,Wheels
+You can assign a data type with 1 or more traits in a single statement:
+```julia
+struct Crane end
+@assign Crane with Fly,Swim
 ```
 
 ## Interfaces
@@ -85,12 +96,90 @@ type implementations.
 
 ### Defining interfaces
 
-TBD
+Once you have defined a trait, you may define a set of interface contracts that a
+data type must implement when exhibiting the trait.  These contracts are registered
+in the BinaryTraits system using the `@implement` macro.
+
+The syntax of `@implement` is as follows:
+
+```julia
+@implement <CanType> by <FunctionSignature>
+```
+
+The value of `<CanType>` is the positive side of the trait e.g. `CanFly`, `IsIterable`,
+etc.  The `<FunctionSignature>` is basically a standard function signature, without
+the first argument for displatch.
+
+The followings are all valid usages:
+
+```@example guide
+@implement CanFly by liftoff()
+@implement CanFly by fly(direction::Float64, altitude::Float64)
+@implement CanFly by speed()::Float64
+```
+
+When return type is not specified, it is default to `Any`.
+*Note that return type is currently not validated so it could be used here
+just for documentation purpose.*
 
 ### Implementing interfaces
 
-TBD
+A data type that is assigned to a trait should implement all interface contracts.
+In the previous section, we established three contracts for the `Fly` trait.
+
+To satisfy those contracts, we must implement the same functions with the
+additional requirement that the first argument must accept an object of your
+data type.
+
+So let's say we are defining a `Bird` type that exhibits `Fly` trait, we would
+do something like this:
+
+```@example guide
+abstract type Animal end
+struct Bird <: Animal end
+@assign Bird with Fly
+liftoff(bird::Bird) = "Hoo hoo!"
+```
+
+However, it would be more practical when you have multiple types that satisfy
+the trait.  Hence Holy Trait comes to rescue:
+
+```@example guide
+liftoff(x::Animal) = liftoff(flytrait(x), x)
+liftoff(::CanFly, x) = "Hi ho!"
+liftoff(::CannotFly, x) = "Hi ho!"
+```
 
 ### Verifying interfaces
 
-TBD
+The reason for spending so much effort in specifying interface contracts is
+so that we have a high confidence about our code.  Julia is a dynamic system
+and so generally speaking we do not have any static type checking in place.
+However, BinaryTraits now gives you that capability.
+
+The `check` function can be used to verify whether your data type has fully
+implemented its assigned traits and respective interface contracts.  The usage
+is embarassingly simple.  You can just call the `check` function with the
+data typ:
+
+```@example guide
+check(Bird)
+```
+
+The `check` function returns an `InterfaceReview` object, which gives you the
+validation result.  Continuing with the same example above:
+
+The warnings are generated so that it comes up in the log file.   The following text
+is the display for the `InterfaceReview` object.  It is designed to clearly show you
+what has been implemented and what's not.
+
+!!! note
+    One way to utilize the `check` function is to put that in your module's `__init__` function
+    so that it is verified before the package is used.  Another option is to do that in your
+    test suite and so it will be run every single time.
+
+## Summary
+
+The ability to design software with traits and interfaces and the ability to verify
+software for conformance to established interface contracts are highly desirable for
+professional software development projects.
