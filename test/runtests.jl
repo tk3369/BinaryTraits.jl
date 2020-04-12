@@ -7,7 +7,8 @@ module SingleTrait
 
     function test()
         @testset "Single Trait" begin
-            @test istrait(FlyTrait)
+            @test istrait(FlyTrait) == true
+            @test istrait(Int) == false
             @test supertype(FlyTrait) === Any
             @test supertype(CanFly) <: FlyTrait
             @test supertype(CannotFly) <: FlyTrait
