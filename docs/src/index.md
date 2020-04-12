@@ -68,7 +68,7 @@ fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
 check(Duck)
 ```
 
-## Applying holy traits
+## Applying Holy Traits
 
 If we would just implement interface contracts directly on concrete types then it can
 be too specific for what it is worth.  If we have 100 flying animals, I shouldn't need to define
