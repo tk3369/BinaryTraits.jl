@@ -132,19 +132,16 @@ end
 function Base.show(io::IO, ir::InterfaceReview)
     T = InterfaceReview
     if length(ir.implemented) == length(ir.misses) == 0
-        print(io, "$T($(ir.type)) does not need to implement any interface contracts")
-        return nothing
+        print(io, "✅ $(ir.type) has no interface contract requirements.")
     end
-    if ir.result
-        print(io, "$T($(ir.type)) has fully implemented all interface contracts")
-        if VERBOSE[]
-            println(io, ":")
-            for (i, c) in enumerate(ir.implemented)
-                println(io, "$(i). $c")
-            end
+    if length(ir.implemented) > 0
+        println(io, "✅ $(ir.type) has implemented:")
+        for (i, c) in enumerate(ir.implemented)
+            println(io, "$(i). $c")
         end
-    else
-        println(io, "$T($(ir.type)) is missing the following implementations:")
+    end
+    if length(ir.misses) > 0
+        println(io, "❌ $(ir.type) is missing these implementations:")
         for (i, c) in enumerate(ir.misses)
             println(io, "$(i). $c")
         end
