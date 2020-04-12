@@ -13,13 +13,13 @@ The syntax of `@trait` macro is as follows:
 * `<positive>` and `<negative>` are words that indicates whether a data type exhibits the trait.
 * `<trait1>`, `<trait2>`, etc. are used to define composite traits.
 
-### Using custom super-type
+### Specifying super-type for trait
 
 The as-clause is used to specify the super-type of the trait type.
 If the clause is missing, the super-type is defaulted to `Any`.
 
 This may be useful when you want to group a set of traits under the
-same "umbrella".  The following are valid syntaxes:
+same umbrella.  The following are valid syntaxes:
 
 ```@example guide
 using BinaryTraits
@@ -30,7 +30,7 @@ abstract type Movement end
 @trait Dive as Movement
 ```
 
-### Specifying custom Prefixes
+### Using custom prefixes
 
 When you define a trait using verbs like *Fly* or *Swim* in the above, it makes sense to define
 trait types with `Can` and `Cannot` prefixes.  But, what if you want to define a trait using a
@@ -63,7 +63,7 @@ need to use the `with` clause:
 
 Then, we can just dispatch as follows:
 
-```@example guide
+```julia
 spank(x) = spank(flyswimtrait(x), x)
 spank(::CanFlySwim, x) = "Flying high and diving deep"
 spank(::CannotFlySwim, x) = "Too Bad"
@@ -118,15 +118,15 @@ The followings are all valid usages:
 @implement CanFly by speed()::Float64
 ```
 
-When return type is not specified, it is default to `Any`.
-*Note that return type is currently not validated so it could be used here
-just for documentation purpose.*
+!!! note
+    When return type is not specified, it is default to `Any`.
+    Return type is currently not validated so it could be used here
+    just for documentation purpose.
 
 ### Implementing interfaces
 
 A data type that is assigned to a trait should implement all interface contracts.
 In the previous section, we established three contracts for the `Fly` trait.
-
 To satisfy those contracts, we must implement the same functions with the
 additional requirement that the first argument must accept an object of your
 data type.
@@ -139,6 +139,7 @@ abstract type Animal end
 struct Bird <: Animal end
 @assign Bird with Fly
 liftoff(bird::Bird) = "Hoo hoo!"
+nothing # hide
 ```
 
 However, it would be more practical when you have multiple types that satisfy
@@ -162,7 +163,7 @@ implemented its assigned traits and respective interface contracts.  The usage
 is embarassingly simple.  You can just call the `check` function with the
 data typ:
 
-```@example guide
+```@repl guide
 check(Bird)
 ```
 
