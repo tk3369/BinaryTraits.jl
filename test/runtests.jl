@@ -173,6 +173,10 @@ module Interfaces
 
             show(buf, duck_check)
             @test buf |> take! |> String |> contains("missing")
+
+            # Bird is assigned with 1 FlyTrait and that requires 3 contracts
+            @test required_contracts(Bird) |> length == 1
+            @test required_contracts(Bird)[1] |> last |> length == 3
         end
     end
 end
