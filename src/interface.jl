@@ -73,7 +73,8 @@ end
 function Base.show(io::IO, c::Contract)
     type = Symbol(TYPE_PLACEHOLDER)
     args = "(" * join([type, c.args...], ", ::") * ")"
-    print(io, "$(c.can_type) ⇢ $(c.func)$(args)")
+    trait = supertype(c.can_type)
+    print(io, "$(trait): $(c.can_type) ⇢ $(c.func)$(args)")
     c.ret !== nothing && print(io, "::$(c.ret)")
 end
 
@@ -128,13 +129,20 @@ An InterfaceReview object contains the validation results of an interface.
     misses::Vector{Contract}
 end
 
-function Base.show(io::IO, ir::T) where {T <: InterfaceReview}
+function Base.show(io::IO, ir::InterfaceReview)
+    T = InterfaceReview
     if length(ir.implemented) == length(ir.misses) == 0
         print(io, "$T($(ir.type)) does not need to implement any interface contracts")
         return nothing
     end
     if ir.result
         print(io, "$T($(ir.type)) has fully implemented all interface contracts")
+        if VERBOSE[]
+            println(io, ":")
+            for (i, c) in enumerate(ir.implemented)
+                println(io, "$(i). $c")
+            end
+        end
     else
         println(io, "$T($(ir.type)) is missing the following implementations:")
         for (i, c) in enumerate(ir.misses)
@@ -161,7 +169,7 @@ function fully_implemented(T::Assignable)
             if method_exists
                 push!(implemented_contracts, c)
             else
-                VERBOSE[] && @warn "Missing implementation: $sig" c.func tuple_type
+                @warn "Missing implementation: $sig"
                 all_good = false
                 push!(missing_contracts, c)
             end
@@ -183,6 +191,13 @@ macro check(T)
         BinaryTraits.fully_implemented($T)
     end)
 end
+
+"""
+    required_contracts(T::Assignable)
+
+Return an array of pairs of trait and the set of contracts required for that trait.
+"""
+required_contracts(T::Assignable) = [supertype(t) => contracts(t) for t in traits(T)]
 
 """
     @implement <CanType> by <FunctionSignature>

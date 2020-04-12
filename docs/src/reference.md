@@ -13,6 +13,7 @@
 ```@docs
 traits
 istrait
+required_contracts
 ```
 
 ## Types
