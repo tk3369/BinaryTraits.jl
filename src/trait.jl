@@ -2,6 +2,16 @@
 const DEFAULT_TRAIT_SUPERTYPE = Any
 
 """
+    composite_traits
+
+Maintains a mapping between a can-type to the underlying traits'
+can-type's.
+"""
+const composite_traits = Dict{DataType,Set{DataType}}()
+
+"""
+    prefix_map
+
 The `prefix_map` is a Dict that maps a module to another Dict, which maps
 a trait (as a Symbol) to tuple of positive and negative prefixes for the
 trait type.  For example:
@@ -33,7 +43,7 @@ Create a new trait type for `name` called `\$(name)Trait`:
 * If the `with` clause is provided, then it defines a composite trait from existing traits. Note that you must specify at least 2 traits to make a composite trait.
 """
 macro trait(name::Symbol, args...)
-    category, prefixes, traits = parse_trait_args(args)
+    category, prefixes, underlying_traits = parse_trait_args(args)
     pos, neg = prefixes.args
 
     trait_type = trait_type_name(name)
@@ -44,11 +54,11 @@ macro trait(name::Symbol, args...)
 
     set_prefix(__module__, name, (pos,neg))
 
-    default_expr = if traits !== nothing
+    default_expr = if underlying_traits !== nothing
         # Construct something like: flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
-        traits_func_names = [trait_func_name(sym) for sym in traits.args]
+        traits_func_names = [trait_func_name(sym) for sym in underlying_traits.args]
         traits_can_types  = [Symbol("$(get_prefix(__module__, sym)[1])$(sym)")
-            for sym in traits.args]
+            for sym in underlying_traits.args]
         condition =
             Expr(:(&&),
                 [Expr(:call, :(===), Expr(:call, f, :x), Expr(:call, g))
@@ -57,7 +67,24 @@ macro trait(name::Symbol, args...)
         # Consruct exprssion like: [condition] ? CanFlySwim() : CannotFlySwim()
         Expr(:if, condition, Expr(:call, can_type), Expr(:call, cannot_type))
     else
+        # The default is "cannot" for every type
         Expr(:call, cannot_type)
+    end
+
+    # If it's composite trait, then I want to maintain a mapping from the
+    # can-type to the underlying's can-types.  The generated code should look
+    # like this:
+    # BinaryTraits.composite_traits[CanFlySwim] = Set[CanFly,CanSwim]
+    composite_expr = if underlying_traits !== nothing
+        target_dict_var = Expr(:., :BinaryTraits, QuoteNode(:composite_traits))
+        target_assignment = Expr(:ref, target_dict_var, can_type)
+        traits_can_types  = [Symbol("$(get_prefix(__module__, sym)[1])$(sym)")
+            for sym in underlying_traits.args]
+        array_of_can_types = Expr(:vect, traits_can_types...)
+        set_of_can_types = Expr(:call, :Set, array_of_can_types)
+        Expr(:(=), target_assignment, set_of_can_types)
+    else
+        :()
     end
 
     expr = quote
@@ -66,6 +93,7 @@ macro trait(name::Symbol, args...)
         struct $cannot_type <: $trait_type end
         $(default_trait_function)(x::Any) = $default_expr
         BinaryTraits.istrait(::Type{$trait_type}) = true
+        $composite_expr
         nothing
     end
     display_expanded_code(expr)

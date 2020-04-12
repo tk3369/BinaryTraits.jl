@@ -182,11 +182,15 @@ check(Bird)
 ```
 
 The `check` function returns an `InterfaceReview` object, which gives you the
-validation result.  Continuing with the same example above:
+validation result.  The warnings are generated so that it comes up in the log file.
+The following text is the display for the `InterfaceReview` object.  It is designed
+to clearly show you what has been implemented and what's not.
 
-The warnings are generated so that it comes up in the log file.   The following text
-is the display for the `InterfaceReview` object.  It is designed to clearly show you
-what has been implemented and what's not.
+!!! note
+    When you define composite traits, all contracts from the underlying traits must be
+    implemented as well.  If you have a `FlySwim` trait, then all contracts specified
+    for `CanFly` and `CanSwim` are required even though you have not added any new
+    contracts for `CanFlySwim`.
 
 !!! note
     One way to utilize the `check` function is to put that in your module's `__init__` function

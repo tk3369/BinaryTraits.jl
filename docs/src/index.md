@@ -11,6 +11,9 @@ Every motivation starts with an example.  In this page, we cover the following t
 Suppose that we are modeling the ability of animals.  So we can define traits as follows:
 
 ```@example ex
+using BinaryTraits
+
+# define traits
 abstract type Ability end
 @trait Swim as Ability
 @trait Fly as Ability

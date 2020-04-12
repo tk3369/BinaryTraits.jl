@@ -111,3 +111,12 @@ julia> comprehensibletrait(Counter(2))
 IsComprehensible()
 =#
 
+required_contracts(Counter)
+#=
+julia> required_contracts(Counter)
+Set{BinaryTraits.Contract} with 3 elements:
+  IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+  LengthTrait: HasLength ⇢ length(::<Type>)::Int64
+  IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
+=#
+

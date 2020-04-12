@@ -1,12 +1,3 @@
-
-"""
-    Assignable
-
-`Assignable` represents any data type that can be associated with traits.
-It essentially covers all data types including parametric types e.g. `AbstractArray`
-"""
-const Assignable = Union{UnionAll, DataType}
-
 # used for display purpose only
 const TYPE_PLACEHOLDER = "::<Type>"
 
@@ -108,7 +99,17 @@ Returns a set of Contracts that are required to be implemented
 for `can_type`.
 """
 function contracts(can_type::DataType)
-    return get(interface_map, can_type, Set{Contract}())
+    current_contracts = get(interface_map, can_type, Set{Contract}())
+    if haskey(composite_traits, can_type)
+        contracts_array = contracts.(composite_traits[can_type])
+        @debug "after recusion" contracts_array
+        underlying_contracts = union(contracts_array...)
+        @debug "combining" current_contracts underlying_contracts
+        return union(current_contracts, underlying_contracts)
+    else
+        @debug "returning" current_contracts
+        return current_contracts
+    end
 end
 
 """
@@ -180,9 +181,13 @@ end
 """
     required_contracts(T::Assignable)
 
-Return an array of pairs of trait and the set of contracts required for that trait.
+Return a set of contracts that is required to be implemented for
+the provided type `T`.
 """
-required_contracts(T::Assignable) = [supertype(t) => contracts(t) for t in traits(T)]
+function required_contracts(T::Assignable)
+    c = [contracts(t) for t in traits(T)]  # returns array of set of contracts
+    return union(c...)
+end
 
 """
     @implement <CanType> by <FunctionSignature>
