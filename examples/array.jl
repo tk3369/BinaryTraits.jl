@@ -36,7 +36,8 @@ julia> check(Int1D)
 required_contracts(Int1D)
 #=
 julia> required_contracts(Int1D)
-2-element Array{Pair{DataType,Set{BinaryTraits.Contract}},1}:
-   LengthTrait => Set([LengthTrait: HasLength ⇢ length(::<Type>)::Int64])
- IterableTrait => Set([IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any, IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any])
+Set{BinaryTraits.Contract} with 3 elements:
+  IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+  LengthTrait: HasLength ⇢ length(::<Type>)::Int64
+  IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
 =#

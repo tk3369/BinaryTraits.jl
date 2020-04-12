@@ -128,46 +128,85 @@ end
 
 module Interfaces
     using BinaryTraits, Test
+
+    # Fly trait requires multiple contracts with variety of func signatures
     @trait Fly
     @implement CanFly by liftoff()
     @implement CanFly by speed(resistence::Float64)::Float64
     @implement CanFly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
 
+    # Pretty trait requires a single contract
+    @trait Pretty prefix Is,Not
+    @implement IsPretty by look_at_the_mirror_daily()::Bool
+
+    # Bird satisfies all contracts from FlyTrait by concrete type
     struct Bird end
     @assign Bird with Fly
     liftoff(::Bird) = "hi ho!"
     speed(::Bird, resistence::Float64) = 100 - resistence
     flyto(::Bird, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
 
+    # Duck satisfies partial contracts from FlyTrait by concrete type
     struct Duck end
     @assign Duck with Fly
     liftoff(::Duck) = "hi ho!"
 
-    @trait Pretty prefix Is,Not
+    # Chicken does not satisfy any contract from FlyTrait
+    struct Chicken end
+    @assign Chicken with Fly
+
+    # Flamingo exhibits both Fly and Pretty traits
     struct Flamingo end
-    @assign Flamingo with Pretty
+    @assign Flamingo with Fly,Pretty  # composite trait
+    liftoff(::Flamingo) = "wee!"
+    speed(::Flamingo, resistence::Float64) = 150 - resistence
+    flyto(::Flamingo, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
+    look_at_the_mirror_daily(::Flamingo) = true
+
+    # Test composite traits - total underlying 4 contracts required for this!
+    @trait FlyPretty prefix Is,Not with Fly,Pretty
+
+    # Crane partially satisfies FlyTrait and fully satisfies Pretty trait
+    struct Crane end
+    @assign Crane with FlyPretty
+    speed(::Crane, resistence::Float64) = 150 - resistence
+    flyto(::Crane, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
+    look_at_the_mirror_daily(::Crane) = true
 
     function test()
-        @testset "Interface" begin
+        @testset "Interface validation" begin
+
             bird_check = check(Bird)
             @test bird_check.result == true
-            @test length(bird_check.misses) == 0
+            @test bird_check.implemented |> length == 3
+            @test bird_check.misses |> length == 0
+
+            chicken_check = check(Chicken)
+            @test chicken_check.result == false
+            @test chicken_check.implemented |> length == 0
+            @test chicken_check.misses |> length == 3
 
             duck_check = check(Duck)
             @test duck_check.result == false
-            @test length(duck_check.misses) == 2
+            @test duck_check.implemented |> length == 1
+            @test duck_check.misses |> length == 2
 
             flamingo_check = check(Flamingo)
             @test flamingo_check.result == true
-            @test flamingo_check.implemented |> length == 0
+            @test flamingo_check.implemented |> length == 4
             @test flamingo_check.misses |> length == 0
+
+            crane_check = check(Crane)
+            @test crane_check.result == false
+            @test crane_check.implemented |> length == 3
+            @test crane_check.misses |> length == 1
 
             # test `show` function
             buf = IOBuffer()
             contains(s) = x -> occursin(s, x)
 
             show(buf, flamingo_check)
-            @test buf |> take! |> String |> contains("has no interface contract requirements")
+            @test buf |> take! |> String |> contains("has implemented")
 
             show(buf, bird_check)
             @test buf |> take! |> String |> contains("has implemented")
@@ -176,8 +215,10 @@ module Interfaces
             @test buf |> take! |> String |> contains("is missing")
 
             # Bird is assigned with 1 FlyTrait and that requires 3 contracts
-            @test required_contracts(Bird) |> length == 1
-            @test required_contracts(Bird)[1] |> last |> length == 3
+            @test required_contracts(Bird) |> length == 3
+
+            # Crane requires 4 contracts because it has both Fly and Pretty traits
+            @test required_contracts(Crane) |> length == 4
         end
     end
 end
