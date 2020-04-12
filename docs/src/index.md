@@ -80,7 +80,7 @@ julia> check(Duck)
 ## Applying Holy Traits
 
 If we would just implement interface contracts directly on concrete types then it can
-be too specific for what it is worth.  If we have 100 flying animals, I shouldn't need to define
+be too specific for what it is worth.  If we have 100 flying animals, we shouldn't need to define
 100 interface methods for the 100 concrete types.
 
 That's how Holy Trais pattern kicks in.  Rather than implementing the `fly` method
