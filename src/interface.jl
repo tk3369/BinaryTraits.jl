@@ -54,10 +54,10 @@ the Can-type of a trait. The function `func` must accepts `args` and returns `re
 - `args`: arguments of the function `func`
 - `ret`: return type of the function `func`
 """
-struct Contract{T <: DataType, F <: Function, N}
+struct Contract{T <: DataType, F <: Function}
     can_type::T
     func::F
-    args::NTuple{N, DataType}
+    args::Tuple
     ret::Union{DataType,Nothing}
 end
 
@@ -85,8 +85,8 @@ a value of type `ret`.
 """
 function register(can_type::DataType,
                   func::Function,
-                  args::NTuple{N,DataType},
-                  ret::Union{DataType,Nothing} = nothing) where N
+                  args::Tuple,
+                  ret::Union{DataType,Nothing} = nothing)
     contracts = get!(interface_map, can_type, Set{Contract}())
     push!(contracts, Contract(can_type, func, args, ret))
     return nothing
