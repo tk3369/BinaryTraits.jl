@@ -218,7 +218,7 @@ macro implement(can_type, by, sig)
     # generate code
     expr = quote
         function $func_name end
-        BinaryTraits.register($__module__, $can_type, $func_name,
+        BinaryTraits.register($can_type, $func_name,
             ($(func_arg_types...),), $return_type)
     end
     display_expanded_code(expr)
