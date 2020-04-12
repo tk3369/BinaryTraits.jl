@@ -13,7 +13,6 @@ Suppose that we are modeling the ability of animals.  So we can define traits as
 ```@example ex
 using BinaryTraits
 
-# define traits
 abstract type Ability end
 @trait Swim as Ability
 @trait Fly as Ability
@@ -42,9 +41,9 @@ nothing # hide
 
 *Voila!*
 
-```@example ex
-tickle(Dog())   # "Stuck laughing"
-tickle(Duck())  # "Flying high and diving deep"
+```@repl ex
+tickle(Dog())
+tickle(Duck())
 nothing # hide
 ```
 
@@ -53,22 +52,29 @@ nothing # hide
 What if we want to enforce an interface? e.g. animals that can fly must
 implement a `fly` method.  We can define that interface as follows:
 
-```@example ex
+```julia
 @implement CanFly by fly(direction::Float64, altitude::Float64)::Nothing
 ```
 
 Then, to make sure that our implementation is correct, we can use the `check`
 function as shown below:
 
-```@repl ex
-check(Duck)
+```julia
+julia> check(Duck)
+┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Duck, ::Float64, ::Float64)::Nothing
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:170
+❌ Duck is missing these implementations:
+1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
 ```
 
 Now, let's implement the method and check again:
 
-```@repl
-fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
-check(Duck)
+```julia
+julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
+
+julia> check(Duck)
+✅ Duck has implemented:
+1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
 ```
 
 ## Applying Holy Traits
