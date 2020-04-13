@@ -53,7 +53,7 @@ What if we want to enforce an interface? e.g. animals that can fly must
 implement a `fly` method.  We can define that interface as follows:
 
 ```julia
-@implement CanFly by fly(direction::Float64, altitude::Float64)::Nothing
+@implement CanFly by fly(direction::Float64, altitude::Float64)
 ```
 
 Then, to make sure that our implementation is correct, we can use the `check`
@@ -64,7 +64,7 @@ julia> check(Duck)
 ┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Duck, ::Float64, ::Float64)::Nothing
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:170
 ❌ Duck is missing these implementations:
-1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
+1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Any
 ```
 
 Now, let's implement the method and check again:
@@ -74,7 +74,7 @@ julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
 
 julia> check(Duck)
 ✅ Duck has implemented:
-1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Nothing
+1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Any
 ```
 
 ## Applying Holy Traits
