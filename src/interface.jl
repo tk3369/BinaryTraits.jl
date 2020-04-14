@@ -51,19 +51,25 @@ the Can-type of a trait. The function `func` must accepts `args` and returns `re
 # Fields
 - `can_type`: can-type of a trait e.g. `CanFly`
 - `func`: function that must be implemented to satisfy this trait
-- `args`: arguments of the function `func`
+- `args`: argument types of the function `func`
+- `kwargs`: keyword argument names of the function `func`
 - `ret`: return type of the function `func`
 """
 struct Contract{T <: DataType, F <: Function}
     can_type::T
     func::F
     args::Tuple
+    kwargs::Tuple
     ret::Union{DataType,Nothing}
 end
 
 function Base.show(io::IO, c::Contract)
-    type = Symbol(TYPE_PLACEHOLDER)
-    args = "(" * join([type, c.args...], ", ::") * ")"
+    typ = Symbol(TYPE_PLACEHOLDER)
+    args = string("(", join([typ, c.args...], ", ::"))
+    if length(c.kwargs) > 0
+        args = string(args, "; ", join(c.kwargs, ", "))
+    end
+    args = string(args, ")")
     trait = supertype(c.can_type)
     print(io, "$(trait): $(c.can_type) ⇢ $(c.func)$(args)")
     c.ret !== nothing && print(io, "::$(c.ret)")
@@ -86,9 +92,10 @@ a value of type `ret`.
 function register(can_type::DataType,
                   func::Function,
                   args::Tuple,
-                  ret::Union{DataType,Nothing} = nothing)
+                  kwargs::NTuple{N,Symbol},
+                  ret::Union{DataType,Nothing} = nothing) where N
     contracts = get!(interface_map, can_type, Set{Contract}())
-    push!(contracts, Contract(can_type, func, args, ret))
+    push!(contracts, Contract(can_type, func, args, kwargs, ret))
     return nothing
 end
 
@@ -162,7 +169,7 @@ function check(T::Assignable)
     for can_type in traits(T)
         for c in contracts(can_type)
             tuple_type = Tuple{T, c.args...}
-            method_exists = hasmethod(c.func, tuple_type)
+            method_exists = hasmethod(c.func, tuple_type, c.kwargs)
             sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
             if method_exists
                 push!(implemented_contracts, c)
@@ -216,7 +223,7 @@ has_wings(duck::Duck)::Bool
 """
 macro implement(can_type, by, sig)
 
-    func_name, func_arg_names, func_arg_types, return_type =
+    func_name, func_arg_names, func_arg_types, kwarg_names, return_type =
         parse_implement(can_type, by, sig)
     # @info "sig" func_name func_arg_names func_arg_types
 
@@ -224,7 +231,7 @@ macro implement(can_type, by, sig)
     expr = quote
         function $func_name end
         BinaryTraits.register($can_type, $func_name,
-            ($(func_arg_types...),), $return_type)
+                ($(func_arg_types...),), tuple(($kwarg_names)...), $return_type)
     end
     display_expanded_code(expr)
     return esc(expr)
@@ -232,40 +239,59 @@ end
 
 # Parsing function for @implement macro
 function parse_implement(can_type, by, sig)
-    usage = "Invalid @implement usage."
-    if !(can_type isa Symbol) || by !== :by || !(sig isa Expr)
-        throw(SyntaxError(usage))
-    end
+    usage = "usage: @implement <Type> by <function specification::<ReturnType>"
+    can_type isa Symbol && sig isa Expr && by === :by || throw(SyntaxError(usage))
 
     # Is return type specified?
-    has_return_type = sig.head == Symbol("::")
-    if has_return_type
+    if sig.head === Symbol("::") 
         return_type = sig.args[2]
         sig = sig.args[1]
     else
         return_type = :Any
     end
 
-    # TODO should we use @assert here?
-    @assert sig isa Expr
-    @assert sig.head === :call
+    sig isa Expr && sig.head === :call || throw(SyntaxError(usage))
 
     # parse signature
     func_name = sig.args[1]   # must be Symbol
     func_arg_names = Symbol[]
-    func_arg_types = Symbol[]
-    for (idx, x) in enumerate(sig.args[2:end])  # x must be Expr of 1 or 2 symbols
-        @assert x isa Expr
-        @assert x.head == Symbol("::")
-        @assert x.args |> length in [1,2]
-        if length(x.args) == 1
-            push!(func_arg_names, Symbol("x$idx"))
-            push!(func_arg_types, x.args[1])
-        else
-            push!(func_arg_names, x.args[1])
-            push!(func_arg_types, x.args[2])
+    func_arg_types = Any[]
+    func_kwarg_names = Symbol[]
+    firstarg = 2
+    if length(sig.args) >= 2 && sig.args[2] isa Expr && sig.args[2].head == :parameters
+        for x in sig.args[2].args
+            push!(func_kwarg_names, extract_name(x, nothing))
         end
+        firstarg += 1
+    end
+    for (idx, x) in enumerate(sig.args[firstarg:end])  # x must be Expr of 1 or 2 symbols
+        push!(func_arg_names, extract_name(x, Symbol("x$idx")))
+        push!(func_arg_types, extract_type(x, :(Base.Bottom)))
     end
 
-    return (func_name, func_arg_names, func_arg_types, return_type)
+    return (func_name, func_arg_names, func_arg_types, func_kwarg_names, return_type)
+end
+
+extract_name(x::Symbol, default) = x
+function extract_name(x::Expr, default)
+    n = length(x.args)
+    if x.head == Symbol("::")
+        n > 1 ? x.args[1] : default
+    elseif n >= 1
+        extract_name(x.args[1], default)
+    else
+        default
+    end
+end
+
+extract_type(::Symbol, default) = default
+function extract_type(x::Expr, default)
+    n = length(x.args)
+    if x.head == Symbol("::")
+        n > 1 ? x.args[2] : x.args[1]
+    elseif n >= 1
+        extract_type(x.args[1], default)
+    else
+        default
+    end
 end

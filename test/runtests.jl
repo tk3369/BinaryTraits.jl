@@ -173,6 +173,27 @@ module Interfaces
     flyto(::Crane, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
     look_at_the_mirror_daily(::Crane) = true
 
+    struct Penguin end
+    @trait Dive
+    @assign Penguin with Dive
+    @implement CanDive by dive1(::Integer)           # missing argument name
+    @implement CanDive by dive2(::Vector{<:Integer}) # parameterized type
+    @implement CanDive by dive31(x::Real;)            # keyword arguments
+    @implement CanDive by dive32(x::Real; kw::Real)   # keyword arguments
+    @implement CanDive by dive33(x::Real; kw1::Real, kw2) # keyword arguments
+    @implement CanDive by dive4(::Base.Bottom)
+    @implement CanDive by dive5(::Base.Bottom)
+    @implement CanDive by dive6(x)              # default type is Base.Bottom
+
+    dive1(::Penguin, ::Real) = 1                # Real >: Integer
+    dive2(::Penguin, ::Vector) = 2              # Vector >: Vector{<:Integer}
+    dive31(::Penguin, ::Number) = 31            # no kw argument
+    dive32(::Penguin, ::Number; kw::Complex) = 32 # kw argument type is ignored!
+    dive33(::Penguin, ::Number; kw...) = 33     # any number of kw arguments
+    dive4(::Penguin, ::Integer) = 4             # Integer >: Base.Bottom
+    dive5(::Penguin, ::Int) = 5                 # Int is not recognized as >: Bottom !
+    dive6(::Penguin, ::AbstractFloat) = 6       # AbstractFloat >: Base.Bottom
+
     function test()
         @testset "Interface validation" begin
 
@@ -201,6 +222,11 @@ module Interfaces
             @test crane_check.implemented |> length == 3
             @test crane_check.misses |> length == 1
 
+            penguin_check = check(Penguin)
+            @test penguin_check.result == false
+            @test penguin_check.implemented |> length == 7
+            @test penguin_check.misses |> length == 1
+
             # test `show` function
             buf = IOBuffer()
             contains(s) = x -> occursin(s, x)
@@ -219,6 +245,10 @@ module Interfaces
 
             # Crane requires 4 contracts because it has both Fly and Pretty traits
             @test required_contracts(Crane) |> length == 4
+
+            # Penguin is unexpectedly missing dive5
+            show(buf, penguin_check.misses)
+            @test buf |> take! |> String |> contains("dive5")
         end
     end
 end
