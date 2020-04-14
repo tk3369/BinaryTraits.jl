@@ -169,7 +169,11 @@ function check(T::Assignable)
     for can_type in traits(T)
         for c in contracts(can_type)
             tuple_type = Tuple{T, c.args...}
-            method_exists = hasmethod(c.func, tuple_type, c.kwargs)
+            method_exists = if VERSION >= v"1.2"
+                hasmethod(c.func, tuple_type, c.kwargs)
+            else
+                hasmethod(c.func, tuple_type)
+            end
             sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
             if method_exists
                 push!(implemented_contracts, c)

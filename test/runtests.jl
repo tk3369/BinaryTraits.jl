@@ -178,9 +178,11 @@ module Interfaces
     @assign Penguin with Dive
     @implement CanDive by dive1(::Integer)           # missing argument name
     @implement CanDive by dive2(::Vector{<:Integer}) # parameterized type
+    if VERSION >= v"1.2"
     @implement CanDive by dive31(x::Real;)            # keyword arguments
     @implement CanDive by dive32(x::Real; kw::Real)   # keyword arguments
     @implement CanDive by dive33(x::Real; kw1::Real, kw2) # keyword arguments
+I   end
     @implement CanDive by dive4(::Base.Bottom)
     @implement CanDive by dive5(::Base.Bottom)
     @implement CanDive by dive6(x)              # default type is Base.Bottom
@@ -224,7 +226,7 @@ module Interfaces
 
             penguin_check = check(Penguin)
             @test penguin_check.result == false
-            @test penguin_check.implemented |> length == 7
+            @test penguin_check.implemented |> length == VERSION >= v"1.2" ? 7 : 4
             @test penguin_check.misses |> length == 1
 
             # test `show` function
