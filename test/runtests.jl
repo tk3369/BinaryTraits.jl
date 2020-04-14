@@ -182,7 +182,7 @@ module Interfaces
     @implement CanDive by dive31(x::Real;)            # keyword arguments
     @implement CanDive by dive32(x::Real; kw::Real)   # keyword arguments
     @implement CanDive by dive33(x::Real; kw1::Real, kw2) # keyword arguments
-I   end
+   end
     @implement CanDive by dive4(::Base.Bottom)
     @implement CanDive by dive5(::Base.Bottom)
     @implement CanDive by dive6(x)              # default type is Base.Bottom
