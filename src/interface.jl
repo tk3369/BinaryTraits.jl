@@ -307,7 +307,7 @@ supported.
 This is an improvement over `Base.hasmethod` as it treats the `Base.Bottom` case correctly.
 """
 function has_method(@nospecialize(f), @nospecialize(t), kwnames::Tuple{Vararg{Symbol}}=())
-    (VERSION >= v"1.2" ? hasmethod(f, t) : hasmethod(f, t, kwnames)) && return true
+    (VERSION >= v"1.2" ? hasmethod(f, t, kwnames) : hasmethod(f, t)) && return true
     t = Base.to_tuple_type(t)
     t = Base.signature_type(f, t)
     for m in methods(f)
