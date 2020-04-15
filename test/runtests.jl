@@ -225,9 +225,9 @@ module Interfaces
             @test crane_check.misses |> length == 1
 
             penguin_check = check(Penguin)
-            @test penguin_check.result == false
-            @test penguin_check.implemented |> length == (VERSION >= v"1.2" ? 7 : 4)
-            @test penguin_check.misses |> length == 1
+            @test penguin_check.result == true
+            @test penguin_check.implemented |> length == (VERSION >= v"1.2" ? 8 : 5)
+            @test penguin_check.misses |> length == 0
 
             # test `show` function
             buf = IOBuffer()
@@ -248,9 +248,6 @@ module Interfaces
             # Crane requires 4 contracts because it has both Fly and Pretty traits
             @test required_contracts(Crane) |> length == 4
 
-            # Penguin is unexpectedly missing dive5
-            show(buf, penguin_check.misses)
-            @test buf |> take! |> String |> contains("dive5")
         end
     end
 end

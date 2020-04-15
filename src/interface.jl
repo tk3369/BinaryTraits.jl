@@ -139,17 +139,18 @@ end
 
 function Base.show(io::IO, ir::InterfaceReview)
     T = InterfaceReview
+    irtype = ir.type
     if length(ir.implemented) == length(ir.misses) == 0
-        print(io, "✅ $(ir.type) has no interface contract requirements.")
+        print(io, "✅ $(irtype) has no interface contract requirements.")
     end
     if length(ir.implemented) > 0
-        println(io, "✅ $(ir.type) has implemented:")
+        println(io, "✅ $(irtype) has implemented:")
         for (i, c) in enumerate(ir.implemented)
             println(io, "$(i). $c")
         end
     end
     if length(ir.misses) > 0
-        println(io, "❌ $(ir.type) is missing these implementations:")
+        println(io, "❌ $(irtype) is missing these implementations:")
         for (i, c) in enumerate(ir.misses)
             println(io, "$(i). $c")
         end
@@ -169,11 +170,7 @@ function check(T::Assignable)
     for can_type in traits(T)
         for c in contracts(can_type)
             tuple_type = Tuple{T, c.args...}
-            method_exists = if VERSION >= v"1.2"
-                hasmethod(c.func, tuple_type, c.kwargs)
-            else
-                hasmethod(c.func, tuple_type)
-            end
+            method_exists = has_method(c.func, tuple_type, c.kwargs)
             sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
             if method_exists
                 push!(implemented_contracts, c)
@@ -299,3 +296,39 @@ function extract_type(x::Expr, default)
         default
     end
 end
+
+"""
+    has_method(f, Tuple{argument_types...}, (keyword_argument_names...,))
+
+Check existence of a method with same name as `f`, same number of argument types, each
+of which is `>:` to the given `argument_types`, and with all `keyword_argument_names`
+supported.
+
+This is an improvement over `Base.hasmethod` as it treats the `Base.Bottom` case correctly.
+"""
+function has_method(@nospecialize(f), @nospecialize(t), kwnames::Tuple{Vararg{Symbol}}=())
+    t = Base.to_tuple_type(t)
+    t = Base.signature_type(f, t)
+    for m in methods(f)
+        check_method(m, t, kwnames) && return true
+    end
+    false
+end
+
+function check_method(@nospecialize(m::Method), @nospecialize(sig::Type{T}), kwnames::Tuple{Vararg{Symbol}}=tuple()) where T<:Tuple
+    ssig = sig.parameters
+    n = length(ssig)
+    msig = m.sig.parameters
+    n != length(msig) && return false
+    for i = 1:n
+        ssig[i] <: msig[i] || return false
+    end
+    isempty(kwnames) || return true
+    VERSION >= v"1.2" || return false
+    kws = Base.kwarg_decl(m)
+    for kw in kws
+        endswith(String(kw), "...") && return true
+    end
+    return issubset(kwnames, kws)
+end
+
