@@ -182,19 +182,21 @@ module Interfaces
     @implement CanDive by dive31(x::Real;)            # keyword arguments
     @implement CanDive by dive32(x::Real; kw::Real)   # keyword arguments
     @implement CanDive by dive33(x::Real; kw1::Real, kw2) # keyword arguments
+    @implement CanDive by dive34(x;kw1)
     end
     @implement CanDive by dive4(::Base.Bottom)
-    @implement CanDive by dive5(::Base.Bottom)
-    @implement CanDive by dive6(x)              # default type is Base.Bottom
+    @implement CanDive by dive5(x)
+    @implement CanDive by dive6(::Number)
 
     dive1(::Penguin, ::Real) = 1                # Real >: Integer
     dive2(::Penguin, ::Vector) = 2              # Vector >: Vector{<:Integer}
     dive31(::Penguin, ::Number) = 31            # no kw argument
     dive32(::Penguin, ::Number; kw::Complex) = 32 # kw argument type is ignored!
     dive33(::Penguin, ::Number; kw...) = 33     # any number of kw arguments
+    dive34(::Penguin, ::Float64) = 34           # keyword argument missing
     dive4(::Penguin, ::Integer) = 4             # Integer >: Base.Bottom
-    dive5(::Penguin, ::Int) = 5                 # Int is not recognized as >: Bottom !
-    dive6(::Penguin, ::AbstractFloat) = 6       # AbstractFloat >: Base.Bottom
+    dive5(::Penguin, ::Int) = 5                 # Int >: Bottom
+    dive6(::Penguin, ::Int) = 6                 # not Int >: Number
 
     function test()
         @testset "Interface validation" begin
@@ -225,9 +227,9 @@ module Interfaces
             @test crane_check.misses |> length == 1
 
             penguin_check = check(Penguin)
-            @test penguin_check.result == true
-            @test penguin_check.implemented |> length == (VERSION >= v"1.2" ? 8 : 5)
-            @test penguin_check.misses |> length == 0
+            @test penguin_check.result == false
+            @test penguin_check.implemented |> length == (VERSION >= v"1.2" ? 7 : 4)
+            @test penguin_check.misses |> length == (VERSION >= v"1.2" ? 2 : 1)
 
             # test `show` function
             buf = IOBuffer()
@@ -247,6 +249,14 @@ module Interfaces
 
             # Crane requires 4 contracts because it has both Fly and Pretty traits
             @test required_contracts(Crane) |> length == 4
+
+            # Penguin
+            if VERSION >= v"1.2"
+                show(buf, penguin_check.misses)
+                @test buf |> take! |> String |> contains("dive34")
+            end
+            show(buf, penguin_check.misses)
+            @test buf |> take! |> String |> contains("dive6")
 
         end
     end
