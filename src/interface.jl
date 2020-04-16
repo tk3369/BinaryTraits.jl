@@ -307,13 +307,17 @@ supported.
 This is an improvement over `Base.hasmethod` as it treats the `Base.Bottom` case correctly.
 """
 function has_method(@nospecialize(f), @nospecialize(t), kwnames::Tuple{Vararg{Symbol}}=())
-    (VERSION >= v"1.2" ? hasmethod(f, t, kwnames) : hasmethod(f, t)) && return true
+    _hasmethod(f, t, kwnames) && return true
     t = Base.to_tuple_type(t)
     t = Base.signature_type(f, t)
     for m in methods(f)
         check_method(m, t, kwnames) && return true
     end
     false
+end
+
+function _hasmethod(@nospecialize(f), @nospecialize(t), kwnames::Tuple{Vararg{Symbol}}=())
+    VERSION >= v"1.2" && !isempty(kwnames) ? hasmethod(f, t, kwnames) : hasmethod(f, t)
 end
 
 function check_method(@nospecialize(m::Method), @nospecialize(sig::Type{T}), kwnames::Tuple{Vararg{Symbol}}=tuple()) where T<:Tuple
@@ -324,7 +328,7 @@ function check_method(@nospecialize(m::Method), @nospecialize(sig::Type{T}), kwn
     for i = 1:n
         ssig[i] <: msig[i] || return false
     end
-    isempty(kwnames) || return true
+    isempty(kwnames) && return true
     VERSION >= v"1.2" || return false
     par = VERSION >= v"1.4" ? nothing : Core.kwftype(m.sig.parameters[1])
     kws = Base.kwarg_decl(m, par)
