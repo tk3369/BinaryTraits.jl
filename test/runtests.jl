@@ -198,6 +198,13 @@ module Interfaces
     dive5(::Penguin, ::Int) = 5                 # Int >: Bottom
     dive6(::Penguin, ::Int) = 6                 # not Int >: Number
 
+    abstract type Animal end
+    struct Rabbit <: Animal end
+    @trait Eat
+    @assign Animal with Eat
+    @implement CanEat by eat()
+    eat(::Animal) = 1
+
     function test()
         @testset "Interface validation" begin
 
@@ -230,6 +237,9 @@ module Interfaces
             @test penguin_check.result == false
             @test penguin_check.implemented |> length == (VERSION >= v"1.2" ? 7 : 4)
             @test penguin_check.misses |> length == (VERSION >= v"1.2" ? 2 : 1)
+
+            rabbit_check = check(Rabbit)
+            @test rabbit_check.result == true
 
             # test `show` function
             buf = IOBuffer()
