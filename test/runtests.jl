@@ -129,6 +129,8 @@ end
 module Interfaces
     using BinaryTraits, Test
 
+    const SUPPORT_KWARGS = VERSION >= v"1.2"
+
     # Fly trait requires multiple contracts with variety of func signatures
     @trait Fly
     @implement CanFly by liftoff()
@@ -176,13 +178,13 @@ module Interfaces
     struct Penguin end
     @trait Dive
     @assign Penguin with Dive
-    @implement CanDive by dive1(::Integer)           # missing argument name
+    @implement CanDive by dive1(::Integer)           # no argument name
     @implement CanDive by dive2(::Vector{<:Integer}) # parameterized type
-    if VERSION >= v"1.2"
-    @implement CanDive by dive31(x::Real;)            # keyword arguments
-    @implement CanDive by dive32(x::Real; kw::Real)   # keyword arguments
-    @implement CanDive by dive33(x::Real; kw1::Real, kw2) # keyword arguments
-    @implement CanDive by dive34(x;kw1)
+    if SUPPORT_KWARGS
+        @implement CanDive by dive31(x::Real;)            # keyword arguments
+        @implement CanDive by dive32(x::Real; kw::Real)   # keyword arguments
+        @implement CanDive by dive33(x::Real; kw1::Real, kw2) # keyword arguments
+        @implement CanDive by dive34(x;kw1)
     end
     @implement CanDive by dive4(::Base.Bottom)
     @implement CanDive by dive5(x)
@@ -228,8 +230,8 @@ module Interfaces
 
             penguin_check = check(Penguin)
             @test penguin_check.result == false
-            @test penguin_check.implemented |> length == (VERSION >= v"1.2" ? 7 : 4)
-            @test penguin_check.misses |> length == (VERSION >= v"1.2" ? 2 : 1)
+            @test penguin_check.implemented |> length == (SUPPORT_KWARGS ? 7 : 4)
+            @test penguin_check.misses |> length == (SUPPORT_KWARGS ? 2 : 1)
 
             # test `show` function
             buf = IOBuffer()
@@ -251,7 +253,7 @@ module Interfaces
             @test required_contracts(Crane) |> length == 4
 
             # Penguin
-            if VERSION >= v"1.2"
+            if SUPPORT_KWARGS
                 show(buf, penguin_check.misses)
                 @test buf |> take! |> String |> contains("dive34")
             end

@@ -227,12 +227,13 @@ macro implement(can_type, by, sig)
     func_name, func_arg_names, func_arg_types, kwarg_names, return_type =
         parse_implement(can_type, by, sig)
     # @info "sig" func_name func_arg_names func_arg_types
-
+    
+    kwtuple = tuple(kwarg_names...)
     # generate code
     expr = quote
         function $func_name end
         BinaryTraits.register($can_type, $func_name,
-                ($(func_arg_types...),), tuple(($kwarg_names)...), $return_type)
+                              ($(func_arg_types...),), $kwtuple, $return_type)
     end
     display_expanded_code(expr)
     return esc(expr)
@@ -260,11 +261,13 @@ function parse_implement(can_type, by, sig)
     func_kwarg_names = Symbol[]
     firstarg = 2
     if length(sig.args) >= 2 && sig.args[2] isa Expr && sig.args[2].head == :parameters
+        # this is the optional list of keyword arguments
         for x in sig.args[2].args
             push!(func_kwarg_names, extract_name(x, nothing))
         end
         firstarg += 1
     end
+    # further arguments after the keyword argument list
     for (idx, x) in enumerate(sig.args[firstarg:end])  # x must be Expr of 1 or 2 symbols
         push!(func_arg_names, extract_name(x, Symbol("x$idx")))
         push!(func_arg_types, extract_type(x, :(Base.Bottom)))
@@ -277,22 +280,33 @@ extract_name(x::Symbol, default) = x
 function extract_name(x::Expr, default)
     n = length(x.args)
     if x.head == Symbol("::")
+        # form: '<name> :: <type-spec>' or ':: <type-spec>'
+        # we accept <name> if present or deliver default name
         n > 1 ? x.args[1] : default
     elseif n >= 1
+        # form: <something> <op> <rest>
+        # we assume <something> has one of the previous forms - <op> <rest> is ignored
         extract_name(x.args[1], default)
     else
-        default
+        # all other forms deliver default name
+        return default
     end
 end
 
+# if only an argument name, deliver the default type
 extract_type(::Symbol, default) = default
 function extract_type(x::Expr, default)
     n = length(x.args)
     if x.head == Symbol("::")
+        # form: '<name> :: <type-spec>' or ':: <type-spec>'
+        # we accept <type-spec>
         n > 1 ? x.args[2] : x.args[1]
     elseif n >= 1
+        # form: '<something> <op> <rest>'
+        # we assume <something> has one of the previous forms
         extract_type(x.args[1], default)
     else
+        # all other forms deliver default type
         default
     end
 end
