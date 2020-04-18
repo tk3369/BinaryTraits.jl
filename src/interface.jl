@@ -31,7 +31,7 @@ function traits(T::Assignable)
             union!(base, s)
         end
     end
-    base
+    return base
 end
 
 """
@@ -99,7 +99,7 @@ function register(can_type::DataType,
                   args::Tuple,
                   kwargs::NTuple{N,Symbol},
                   ret::Union{DataType,Nothing} = nothing) where N
-    contracts = get!(interface_map, can_type, Set{Contract}())
+    contracts = get!(interface_map, can_type) do; Set{Contract}() end
     push!(contracts, Contract(can_type, func, args, kwargs, ret))
     return nothing
 end
