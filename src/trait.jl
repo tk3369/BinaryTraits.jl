@@ -10,28 +10,40 @@ can-type's.
 const composite_traits = Dict{DataType,Set{DataType}}()
 
 """
-    prefix_map
+    PrefixMap
 
-The `prefix_map` is a Dict that maps a module to another Dict, which maps
-a trait (as a Symbol) to tuple of positive and negative prefixes for the
-trait type.  For example:
+PrefixMap is used to map a trait symbol e.g. :Fly to its respective
+positive/negative trait prefixes e.g. (:Can, :Cannot)
+"""
+const PrefixMap = Dict{Symbol,Tuple{Symbol,Symbol}}
+
+"""
+    PREFIX_STORE
+
+The `PREFIX_STORE` is maps a module to another to a `PrefixMap` object.
+For example:
 
 ```
-Main -> :Fly -> (:Can, :Cannot)
+MyModule -> (:Fly -> (:Can, :Cannot))
 ```
 """
-const prefix_map = Dict{Module,Dict{Symbol,Tuple{Symbol,Symbol}}}()
+const PREFIX_STORE = Dict{Module,PrefixMap}()
+
+"Make a new PrefixMap object"
+makePrefixMap(m::Module) = get!(PREFIX_STORE, m) do
+    PrefixMap()
+end
 
 "Get trait type positive/negative prefixes for `trait`."
 function get_prefix(m::Module, trait::Symbol)
-    trait_dict = get!(prefix_map, m, Dict{Symbol,Tuple{Symbol,Symbol}}())
-    return get!(trait_dict, trait, (:Can, :Cannot))
+    pmap = makePrefixMap(m)
+    return get!(pmap, trait, (:Can, :Cannot))
 end
 
 "Set trait type positive/negative `prefixes` for `trait`."
 function set_prefix(m::Module, trait::Symbol, prefixes::Tuple{Symbol, Symbol})
-    trait_dict = get!(prefix_map, m, Dict{Symbol,Tuple{Symbol,Symbol}}())
-    return get!(trait_dict, trait, prefixes)
+    pmap = makePrefixMap(m)
+    return get!(pmap, trait, prefixes)
 end
 
 """
