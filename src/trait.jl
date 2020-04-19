@@ -20,7 +20,7 @@ const PrefixMap = Dict{Symbol,Tuple{Symbol,Symbol}}
 """
     PREFIX_STORE
 
-The `PREFIX_STORE` is maps a module to another to a `PrefixMap` object.
+`PREFIX_STORE` is used to map a module to `PrefixMap` object.
 For example:
 
 ```
