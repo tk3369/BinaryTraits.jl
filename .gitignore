@@ -3,3 +3,5 @@
 /dev/
 .vscode/**
 docs/build
+*.cov
+*.mem
