@@ -12,7 +12,7 @@ it is designed to be an *opinionated* library, and it follows certain convention
 The underlying mechanism is just Holy Traits as explained in my
 [Holy Traits book excerpt](https://ahsmart.com/pub/holy-traits-design-patterns-and-best-practice-book.html)
 as well as in Julia manual's
-[trait-based dispatch secion](https://docs.julialang.org/en/v1/manual/methods/#Trait-based-dispatch-1).
+[trait-based dispatch section](https://docs.julialang.org/en/v1/manual/methods/#Trait-based-dispatch-1).
 If you think about Holy Traits as the powerful manual transmission, then BinaryTraits
 is like automatic transmission.  The machinery is the same but it is a lot more pleasant
 to use for casual users.
