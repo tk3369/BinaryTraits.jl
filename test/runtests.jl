@@ -129,6 +129,8 @@ end
 module Interfaces
     using BinaryTraits, Test
 
+    const SUPPORT_KWARGS = VERSION >= v"1.2"
+
     # Fly trait requires multiple contracts with variety of func signatures
     @trait Fly
     @implement CanFly by liftoff()
@@ -173,6 +175,44 @@ module Interfaces
     flyto(::Crane, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
     look_at_the_mirror_daily(::Crane) = true
 
+    struct Penguin end
+    @trait Dive
+    @assign Penguin with Dive
+    @implement CanDive by dive1(::Integer)           # no argument name
+    @implement CanDive by dive2(::Vector{<:Integer}) # parameterized type
+    if SUPPORT_KWARGS
+        @implement CanDive by dive31(x::Real;)            # keyword arguments
+        @implement CanDive by dive32(x::Real; kw::Real)   # keyword arguments
+        @implement CanDive by dive33(y; kw1::Real, kw2)   # keyword arguments
+        @implement CanDive by dive34(x;kw1)
+    end
+    @implement CanDive by dive4(::Base.Bottom)
+    @implement CanDive by dive5(x)
+    @implement CanDive by dive6(::Number)
+
+    dive1(::Penguin, ::Real) = 1                # Real >: Integer
+    dive2(::Penguin, ::Vector) = 2              # Vector >: Vector{<:Integer}
+    dive31(::Penguin, ::Number) = 31            # no kw argument
+    dive32(::Penguin, ::Number; kw::Complex) = 32 # kw argument type is ignored!
+    dive33(::Penguin, ::Int; kw...) = 33        # any number of kw arguments
+    dive34(::Penguin, ::Float64) = 34           # keyword argument missing
+    dive4(::Penguin, ::Integer) = 4             # Integer >: Base.Bottom
+    dive5(::Penguin, ::Int) = 5                 # Int >: Bottom
+    dive6(::Penguin, ::Int) = 6                 # not Int >: Number
+
+    # no contract requirements (code coverage)
+    struct Kiwi end
+
+    # weird argument types in contract specs 
+    @trait Creep
+    @implement CanCreep by creep1(a::Int=5) # argument assignment
+    @implement CanCreep by creep2({}) # invalid argument
+
+    struct Snake end
+    @assign Snake with Creep
+    creep1(::Snake, ::Integer) = 1
+    creep2(::Snake, ::Integer) = 2
+
     function test()
         @testset "Interface validation" begin
 
@@ -201,6 +241,11 @@ module Interfaces
             @test crane_check.implemented |> length == 3
             @test crane_check.misses |> length == 1
 
+            penguin_check = check(Penguin)
+            @test penguin_check.result == false
+            @test penguin_check.implemented |> length == (SUPPORT_KWARGS ? 7 : 4)
+            @test penguin_check.misses |> length == (SUPPORT_KWARGS ? 2 : 1)
+
             # test `show` function
             buf = IOBuffer()
             contains(s) = x -> occursin(s, x)
@@ -219,6 +264,26 @@ module Interfaces
 
             # Crane requires 4 contracts because it has both Fly and Pretty traits
             @test required_contracts(Crane) |> length == 4
+
+            # Penguin
+            if SUPPORT_KWARGS
+                show(buf, penguin_check.misses)
+                @test buf |> take! |> String |> contains("dive34")
+            end
+            show(buf, penguin_check.misses)
+            @test buf |> take! |> String |> contains("dive6")
+
+            # has no interface requirements
+            check_kiwi = check(Kiwi)
+            @test check_kiwi.result
+            show(buf, check_kiwi)
+            @test buf |> take! |> String |> contains("has no interface contract")
+
+            # strange argument types are both accepted
+            check_snake = check(Snake)
+            @test check_snake.result
+            @test check_snake.implemented |> length == 2
+
         end
     end
 end

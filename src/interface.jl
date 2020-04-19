@@ -51,19 +51,25 @@ the Can-type of a trait. The function `func` must accepts `args` and returns `re
 # Fields
 - `can_type`: can-type of a trait e.g. `CanFly`
 - `func`: function that must be implemented to satisfy this trait
-- `args`: arguments of the function `func`
+- `args`: argument types of the function `func`
+- `kwargs`: keyword argument names of the function `func`
 - `ret`: return type of the function `func`
 """
 struct Contract{T <: DataType, F <: Function}
     can_type::T
     func::F
     args::Tuple
+    kwargs::Tuple
     ret::Union{DataType,Nothing}
 end
 
 function Base.show(io::IO, c::Contract)
-    type = Symbol(TYPE_PLACEHOLDER)
-    args = "(" * join([type, c.args...], ", ::") * ")"
+    typ = Symbol(TYPE_PLACEHOLDER)
+    args = string("(", join([typ, c.args...], ", ::"))
+    if length(c.kwargs) > 0
+        args = string(args, "; ", join(c.kwargs, ", "))
+    end
+    args = string(args, ")")
     trait = supertype(c.can_type)
     print(io, "$(trait): $(c.can_type) ⇢ $(c.func)$(args)")
     c.ret !== nothing && print(io, "::$(c.ret)")
@@ -86,9 +92,10 @@ a value of type `ret`.
 function register(can_type::DataType,
                   func::Function,
                   args::Tuple,
-                  ret::Union{DataType,Nothing} = nothing)
+                  kwargs::NTuple{N,Symbol},
+                  ret::Union{DataType,Nothing} = nothing) where N
     contracts = get!(interface_map, can_type, Set{Contract}())
-    push!(contracts, Contract(can_type, func, args, ret))
+    push!(contracts, Contract(can_type, func, args, kwargs, ret))
     return nothing
 end
 
@@ -132,17 +139,18 @@ end
 
 function Base.show(io::IO, ir::InterfaceReview)
     T = InterfaceReview
+    irtype = ir.type
     if length(ir.implemented) == length(ir.misses) == 0
-        print(io, "✅ $(ir.type) has no interface contract requirements.")
+        print(io, "✅ $(irtype) has no interface contract requirements.")
     end
     if length(ir.implemented) > 0
-        println(io, "✅ $(ir.type) has implemented:")
+        println(io, "✅ $(irtype) has implemented:")
         for (i, c) in enumerate(ir.implemented)
             println(io, "$(i). $c")
         end
     end
     if length(ir.misses) > 0
-        println(io, "❌ $(ir.type) is missing these implementations:")
+        println(io, "❌ $(irtype) is missing these implementations:")
         for (i, c) in enumerate(ir.misses)
             println(io, "$(i). $c")
         end
@@ -162,7 +170,7 @@ function check(T::Assignable)
     for can_type in traits(T)
         for c in contracts(can_type)
             tuple_type = Tuple{T, c.args...}
-            method_exists = hasmethod(c.func, tuple_type)
+            method_exists = has_method(c.func, tuple_type, c.kwargs)
             sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
             if method_exists
                 push!(implemented_contracts, c)
@@ -216,15 +224,16 @@ has_wings(duck::Duck)::Bool
 """
 macro implement(can_type, by, sig)
 
-    func_name, func_arg_names, func_arg_types, return_type =
+    func_name, func_arg_names, func_arg_types, kwarg_names, return_type =
         parse_implement(can_type, by, sig)
     # @info "sig" func_name func_arg_names func_arg_types
-
+    
+    kwtuple = tuple(kwarg_names...)
     # generate code
     expr = quote
         function $func_name end
         BinaryTraits.register($can_type, $func_name,
-            ($(func_arg_types...),), $return_type)
+                              ($(func_arg_types...),), $kwtuple, $return_type)
     end
     display_expanded_code(expr)
     return esc(expr)
@@ -232,40 +241,114 @@ end
 
 # Parsing function for @implement macro
 function parse_implement(can_type, by, sig)
-    usage = "Invalid @implement usage."
-    if !(can_type isa Symbol) || by !== :by || !(sig isa Expr)
-        throw(SyntaxError(usage))
-    end
+    usage = "usage: @implement <Type> by <function specification::<ReturnType>"
+    can_type isa Symbol && sig isa Expr && by === :by || throw(SyntaxError(usage))
 
     # Is return type specified?
-    has_return_type = sig.head == Symbol("::")
-    if has_return_type
+    if sig.head === Symbol("::") 
         return_type = sig.args[2]
         sig = sig.args[1]
     else
         return_type = :Any
     end
 
-    # TODO should we use @assert here?
-    @assert sig isa Expr
-    @assert sig.head === :call
+    sig isa Expr && sig.head === :call || throw(SyntaxError(usage))
 
     # parse signature
     func_name = sig.args[1]   # must be Symbol
     func_arg_names = Symbol[]
-    func_arg_types = Symbol[]
-    for (idx, x) in enumerate(sig.args[2:end])  # x must be Expr of 1 or 2 symbols
-        @assert x isa Expr
-        @assert x.head == Symbol("::")
-        @assert x.args |> length in [1,2]
-        if length(x.args) == 1
-            push!(func_arg_names, Symbol("x$idx"))
-            push!(func_arg_types, x.args[1])
-        else
-            push!(func_arg_names, x.args[1])
-            push!(func_arg_types, x.args[2])
+    func_arg_types = Any[]
+    func_kwarg_names = Symbol[]
+    firstarg = 2
+    if length(sig.args) >= 2 && sig.args[2] isa Expr && sig.args[2].head == :parameters
+        # this is the optional list of keyword arguments
+        for x in sig.args[2].args
+            push!(func_kwarg_names, extract_name(x, nothing))
         end
+        firstarg += 1
+    end
+    # further arguments after the keyword argument list
+    for (idx, x) in enumerate(sig.args[firstarg:end])  # x must be Expr of 1 or 2 symbols
+        push!(func_arg_names, extract_name(x, Symbol("x$idx")))
+        push!(func_arg_types, extract_type(x, :(Base.Bottom)))
     end
 
-    return (func_name, func_arg_names, func_arg_types, return_type)
+    return (func_name, func_arg_names, func_arg_types, func_kwarg_names, return_type)
 end
+
+extract_name(x::Symbol, default) = x
+function extract_name(x::Expr, default)
+    n = length(x.args)
+    if x.head == Symbol("::")
+        # form: '<name> :: <type-spec>' or ':: <type-spec>'
+        # we accept <name> if present or deliver default name
+        n > 1 ? x.args[1] : default
+    elseif n >= 1
+        # form: <something> <op> <rest>
+        # we assume <something> has one of the previous forms - <op> <rest> is ignored
+        extract_name(x.args[1], default)
+    else
+        # all other forms deliver default name
+        return default
+    end
+end
+
+# if only an argument name, deliver the default type
+extract_type(::Symbol, default) = default
+function extract_type(x::Expr, default)
+    n = length(x.args)
+    if x.head == Symbol("::")
+        # form: '<name> :: <type-spec>' or ':: <type-spec>'
+        # we accept <type-spec>
+        n > 1 ? x.args[2] : x.args[1]
+    elseif n >= 1
+        # form: '<something> <op> <rest>'
+        # we assume <something> has one of the previous forms
+        extract_type(x.args[1], default)
+    else
+        # all other forms deliver default type
+        default
+    end
+end
+
+"""
+    has_method(f, Tuple{argument_types...}, (keyword_argument_names...,))
+
+Check existence of a method with same name as `f`, same number of argument types, each
+of which is `>:` to the given `argument_types`, and with all `keyword_argument_names`
+supported.
+
+This is an improvement over `Base.hasmethod` as it treats the `Base.Bottom` case correctly.
+"""
+function has_method(@nospecialize(f), @nospecialize(t), kwnames::Tuple{Vararg{Symbol}}=())
+    _hasmethod(f, t, kwnames) && return true # assume hasmethod has no false positives
+    t = Base.to_tuple_type(t)
+    t = Base.signature_type(f, t)
+    for m in methods(f)
+        check_method(m, t, kwnames) && return true
+    end
+    false
+end
+
+function _hasmethod(@nospecialize(f), @nospecialize(t), kwnames::Tuple{Vararg{Symbol}}=())
+    VERSION >= v"1.2" && !isempty(kwnames) ? hasmethod(f, t, kwnames) : hasmethod(f, t)
+end
+
+function check_method(@nospecialize(m::Method), @nospecialize(sig::Type{T}), kwnames::Tuple{Vararg{Symbol}}=tuple()) where T<:Tuple
+    ssig = sig.parameters
+    n = length(ssig)
+    msig = m.sig.parameters
+    n != length(msig) && return false
+    for i = 1:n
+        ssig[i] <: msig[i] || return false
+    end
+    isempty(kwnames) && return true
+    VERSION >= v"1.2" || return false
+    par = VERSION >= v"1.4" ? nothing : Core.kwftype(m.sig.parameters[1])
+    kws = Base.kwarg_decl(m, par)
+    for kw in kws
+        endswith(String(kw), "...") && return true
+    end
+    return issubset(kwnames, kws)
+end
+
