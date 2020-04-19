@@ -25,9 +25,14 @@ Returns a set of Can-types that the data type `T` exhibits.
 See also [`@assign`](@ref).
 """
 function traits(T::Assignable)
-    return get!(traits_map, T, Set{DataType}())
+    base = get!(traits_map, T) do; Set{DataType}() end
+    for (Tmap, s) in pairs(traits_map)
+        if T !== Tmap && T <: Tmap
+            union!(base, s)
+        end
+    end
+    return base
 end
-
 
 """
     assign(T::Assignable, can_type::DataType)
@@ -35,7 +40,7 @@ end
 Assign data type `T` with the specified Can-type of a trait.
 """
 function assign(T::Assignable, can_type::DataType)
-    traits_set = get!(traits_map, T, Set{DataType}())
+    traits_set = get!(traits_map, T) do; Set{DataType}() end
     push!(traits_set, can_type)
     return nothing
 end
@@ -94,7 +99,7 @@ function register(can_type::DataType,
                   args::Tuple,
                   kwargs::NTuple{N,Symbol},
                   ret::Union{DataType,Nothing} = nothing) where N
-    contracts = get!(interface_map, can_type, Set{Contract}())
+    contracts = get!(interface_map, can_type) do; Set{Contract}() end
     push!(contracts, Contract(can_type, func, args, kwargs, ret))
     return nothing
 end

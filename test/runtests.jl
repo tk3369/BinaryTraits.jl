@@ -200,6 +200,14 @@ module Interfaces
     dive5(::Penguin, ::Int) = 5                 # Int >: Bottom
     dive6(::Penguin, ::Int) = 6                 # not Int >: Number
 
+    # Issue #30 - propagate interfaces according to type inheritance
+    abstract type Animal end
+    struct Rabbit <: Animal end
+    @trait Eat
+    @assign Animal with Eat
+    @implement CanEat by eat()
+    eat(::Animal) = 1
+
     # no contract requirements (code coverage)
     struct Kiwi end
 
@@ -245,6 +253,9 @@ module Interfaces
             @test penguin_check.result == false
             @test penguin_check.implemented |> length == (SUPPORT_KWARGS ? 7 : 4)
             @test penguin_check.misses |> length == (SUPPORT_KWARGS ? 2 : 1)
+
+            rabbit_check = check(Rabbit)
+            @test rabbit_check.result == true
 
             # test `show` function
             buf = IOBuffer()
