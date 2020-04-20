@@ -122,12 +122,15 @@ module SyntaxErrors
             @test @testme @trait Fly with Eat,Drink,1  # 1 is not a symbol
 
             @test @testme @assign Dog with 1           # 1 is not a symbol
+            # invalid argument
+            @test @testme @implement CanCreep by creep2([]) # invalid argument
         end
     end
 end
 
 module Interfaces
     using BinaryTraits, Test
+    using BinaryTraits: SyntaxError, extract_type
 
     const SUPPORT_KWARGS = VERSION >= v"1.2"
 
@@ -214,12 +217,10 @@ module Interfaces
     # weird argument types in contract specs 
     @trait Creep
     @implement CanCreep by creep1(a::Int=5) # argument assignment
-    @implement CanCreep by creep2({}) # invalid argument
 
     struct Snake end
     @assign Snake with Creep
     creep1(::Snake, ::Integer) = 1
-    creep2(::Snake, ::Integer) = 2
 
     function test()
         @testset "Interface validation" begin
@@ -293,7 +294,10 @@ module Interfaces
             # strange argument types are both accepted
             check_snake = check(Snake)
             @test check_snake.result
-            @test check_snake.implemented |> length == 2
+            @test check_snake.implemented |> length == 1
+
+            # code coverage
+            @test_throws SyntaxError extract_type(:([]), nothing)
 
         end
     end

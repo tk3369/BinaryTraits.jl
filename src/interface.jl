@@ -232,7 +232,7 @@ macro implement(can_type, by, sig)
     func_name, func_arg_names, func_arg_types, kwarg_names, return_type =
         parse_implement(can_type, by, sig)
     # @info "sig" func_name func_arg_names func_arg_types
-    
+
     kwtuple = tuple(kwarg_names...)
     # generate code
     expr = quote
@@ -246,11 +246,11 @@ end
 
 # Parsing function for @implement macro
 function parse_implement(can_type, by, sig)
-    usage = "usage: @implement <Type> by <function specification::<ReturnType>"
+    usage = "usage: @implement <Type> by <function specification>[::<ReturnType>]"
     can_type isa Symbol && sig isa Expr && by === :by || throw(SyntaxError(usage))
 
     # Is return type specified?
-    if sig.head === Symbol("::") 
+    if sig.head === :(::)
         return_type = sig.args[2]
         sig = sig.args[1]
     else
@@ -284,17 +284,18 @@ end
 extract_name(x::Symbol, default) = x
 function extract_name(x::Expr, default)
     n = length(x.args)
-    if x.head == Symbol("::")
+    if x.head == :(::)
         # form: '<name> :: <type-spec>' or ':: <type-spec>'
         # we accept <name> if present or deliver default name
         n > 1 ? x.args[1] : default
-    elseif n >= 1
+    elseif n >= 1 && x.head == :kw
         # form: <something> <op> <rest>
         # we assume <something> has one of the previous forms - <op> <rest> is ignored
         extract_name(x.args[1], default)
     else
         # all other forms deliver default name
-        return default
+        text = "@implement argument is $x but needs syntax: [<name>][::<type>][=<expr>]"
+        throw(SyntaxError(text))
     end
 end
 
@@ -302,17 +303,16 @@ end
 extract_type(::Symbol, default) = default
 function extract_type(x::Expr, default)
     n = length(x.args)
-    if x.head == Symbol("::")
+    if x.head == :(::)
         # form: '<name> :: <type-spec>' or ':: <type-spec>'
         # we accept <type-spec>
         n > 1 ? x.args[2] : x.args[1]
-    elseif n >= 1
-        # form: '<something> <op> <rest>'
-        # we assume <something> has one of the previous forms
+    elseif n >= 1 && x.head == :kw
+        # form: '<something> = <rest>'
+        # we assume <something> has one of the previous forms and ignore rest
         extract_type(x.args[1], default)
     else
-        # all other forms deliver default type
-        default
+        throw(SyntaxError("@implement")) # will never be called, because extract_name throws
     end
 end
 
