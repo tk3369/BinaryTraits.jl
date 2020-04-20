@@ -6,16 +6,13 @@ abstract type Ability end
 @trait Fly as Ability
 @trait Swim as Ability
 @trait FlySwim with Fly,Swim
-@info "prefix and composite maps"  __binarytraits_prefix_map __binarytraits_composite_trait_map
 
 struct Crane end
 @assign Crane with Fly,Swim
-@info "traits" __binarytraits_traits_map
 
 @implement CanFly by liftoff()
 @implement CanFly by fly(direction::Float64, altitude::Float64)
 @implement CanFly by speed()::Float64
-@info "interface" __binarytraits_interface_map[CanFly]
 
 @check(Crane)
 #=
