@@ -58,10 +58,10 @@ An InterfaceReview object contains the validation results of an interface.
 end
 
 function Base.show(io::IO, ir::InterfaceReview)
-    T = InterfaceReview
     irtype = ir.data_type
     if length(ir.implemented) == length(ir.misses) == 0
         print(io, "✅ $(irtype) has no interface contract requirements.")
+        return
     end
     if length(ir.implemented) > 0
         println(io, "✅ $(irtype) has implemented:")
