@@ -21,11 +21,9 @@ prefixes(m::Module, trait::Symbol) = get_prefix_map(m)[trait]
 
 # :Fly => :Can
 can_prefix(m::Module, trait::Symbol) = prefixes(m, trait)[1]
-cannot_prefix(m::Module, trait::Symbol) = prefixes(m, trait)[2]
 
 # :Fly => :CanFly
 can_type_symbol(m::Module, trait::Symbol) = Symbol(String(can_prefix(m, trait)) * String(trait))
-cannot_type_symbol(m::Module, trait::Symbol) = Symbol(String(can_prefix(m, trait)) * String(trait))
 
 # -----------------------------------------------------------------------------
 
