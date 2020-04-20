@@ -1,38 +1,44 @@
 
 const DEFAULT_TRAIT_SUPERTYPE = Any
 
-"""
-    composite_traits
+# -----------------------------------------------------------------------------
 
-Maintains a mapping between a can-type to the underlying traits'
-can-type's.
-"""
-const composite_traits = Dict{DataType,Set{DataType}}()
+"Create a new prefix map"
+make_prefix_map() = PrefixMap()
 
-"""
-    prefix_map
-
-The `prefix_map` is a Dict that maps a module to another Dict, which maps
-a trait (as a Symbol) to tuple of positive and negative prefixes for the
-trait type.  For example:
-
-```
-Main -> :Fly -> (:Can, :Cannot)
-```
-"""
-const prefix_map = Dict{Module,Dict{Symbol,Tuple{Symbol,Symbol}}}()
-
-"Get trait type positive/negative prefixes for `trait`."
-function get_prefix(m::Module, trait::Symbol)
-    trait_dict = get!(prefix_map, m, Dict{Symbol,Tuple{Symbol,Symbol}}())
-    return get!(trait_dict, trait, (:Can, :Cannot))
+"Get a reference to the module's composite trait map."
+function get_prefix_map(m::Module)
+    isdefined(m, :__binarytraits_prefix_map) || error("Bug, no trait has been defined for module $m yet")
+    return m.__binarytraits_prefix_map
 end
 
-"Set trait type positive/negative `prefixes` for `trait`."
-function set_prefix(m::Module, trait::Symbol, prefixes::Tuple{Symbol, Symbol})
-    trait_dict = get!(prefix_map, m, Dict{Symbol,Tuple{Symbol,Symbol}}())
-    return get!(trait_dict, trait, prefixes)
+"""
+    prefixes(m::Module, trait::Symbol)
+
+Find the prefixes `trait` from the client module `m`.
+"""
+prefixes(m::Module, trait::Symbol) = get_prefix_map(m)[trait]
+
+# :Fly => :Can
+can_prefix(m::Module, trait::Symbol) = prefixes(m, trait)[1]
+cannot_prefix(m::Module, trait::Symbol) = prefixes(m, trait)[2]
+
+# :Fly => :CanFly
+can_type_symbol(m::Module, trait::Symbol) = Symbol(String(can_prefix(m, trait)) * String(trait))
+cannot_type_symbol(m::Module, trait::Symbol) = Symbol(String(can_prefix(m, trait)) * String(trait))
+
+# -----------------------------------------------------------------------------
+
+"Create a new composite trait map"
+make_composite_trait_map() = CompositeTraitMap()
+
+"Get a reference to the module's composite trait map."
+function get_composite_trait_map(m::Module)
+    isdefined(m, :__binarytraits_composite_trait_map) || error("Bug, no trait has been defined for module $m yet")
+    return m.__binarytraits_composite_trait_map
 end
+
+# -----------------------------------------------------------------------------
 
 """
     @trait <name> [as <category>] [prefix <positive>,<negative>] [with <trait1,trait2,...>]
@@ -47,111 +53,68 @@ macro trait(name::Symbol, args...)
     pos, neg = prefixes.args
 
     trait_type = trait_type_name(name)
-    can_type = Symbol("$(pos)$(name)")
-    cannot_type = Symbol("$(neg)$(name)")
+    this_can_type = Symbol("$(pos)$(name)")
+    this_cannot_type = Symbol("$(neg)$(name)")
     lower_name = lowercase(String(name))
+
+    # The default is "cannot".  But if it's a composite trait, then the
+    # default is "can" only when all of it's underlying traits are also "can".
     default_trait_function = trait_func_name(name)
-
-    set_prefix(__module__, name, (pos,neg))
-
     default_expr = if underlying_traits !== nothing
         # Construct something like: flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
         traits_func_names = [trait_func_name(sym) for sym in underlying_traits.args]
-        traits_can_types  = [Symbol("$(get_prefix(__module__, sym)[1])$(sym)")
-            for sym in underlying_traits.args]
+        traits_can_types  = [can_type_symbol(__module__, sym) for sym in underlying_traits.args]
         condition =
             Expr(:(&&),
                 [Expr(:call, :(===), Expr(:call, f, :x), Expr(:call, g))
                         for (f,g) in zip(traits_func_names, traits_can_types)]...)
 
         # Consruct exprssion like: [condition] ? CanFlySwim() : CannotFlySwim()
-        Expr(:if, condition, Expr(:call, can_type), Expr(:call, cannot_type))
+        Expr(:if, condition, Expr(:call, this_can_type), Expr(:call, this_cannot_type))
     else
         # The default is "cannot" for every type
-        Expr(:call, cannot_type)
+        Expr(:call, this_cannot_type)
     end
 
     # If it's composite trait, then I want to maintain a mapping from the
-    # can-type to the underlying's can-types.  The generated code should look
-    # like this:
-    # BinaryTraits.composite_traits[CanFlySwim] = Set[CanFly,CanSwim]
+    # can-type to the underlying's can-types.  It is needed for interface checks.
     composite_expr = if underlying_traits !== nothing
-        target_dict_var = Expr(:., :BinaryTraits, QuoteNode(:composite_traits))
-        target_assignment = Expr(:ref, target_dict_var, can_type)
-        traits_can_types  = [Symbol("$(get_prefix(__module__, sym)[1])$(sym)")
-            for sym in underlying_traits.args]
-        array_of_can_types = Expr(:vect, traits_can_types...)
-        set_of_can_types = Expr(:call, :Set, array_of_can_types)
-        Expr(:(=), target_assignment, set_of_can_types)
+        traits_can_types = [can_type_symbol(__module__, sym) for sym in underlying_traits.args]
+        :( __binarytraits_composite_trait_map[$this_can_type] = Set([$(traits_can_types...)]) )
     else
         :()
     end
 
+    prefixes = (pos, neg)
+    name_node = QuoteNode(name)
+
     expr = quote
         abstract type $trait_type <: $category end
-        struct $can_type <: $trait_type end
-        struct $cannot_type <: $trait_type end
+        struct $this_can_type <: $trait_type end
+        struct $this_cannot_type <: $trait_type end
         $(default_trait_function)(x::Any) = $default_expr
+
         BinaryTraits.istrait(::Type{$trait_type}) = true
+
+        # Remember trait prefixes in client module
+        global __binarytraits_prefix_map
+        if !@isdefined(__binarytraits_prefix_map)
+            __binarytraits_prefix_map = BinaryTraits.make_prefix_map()
+        end
+        __binarytraits_prefix_map[$name_node] = $prefixes
+
+        # Remember composite can-trait mappings in client module
+        global __binarytraits_composite_trait_map
+        if !@isdefined(__binarytraits_composite_trait_map)
+            __binarytraits_composite_trait_map = BinaryTraits.make_composite_trait_map()
+        end
         $composite_expr
+
         nothing
     end
     display_expanded_code(expr)
     return esc(expr)
 end
-
-"""
-    @assign <T> with <Trait1, Trait2, ...>
-
-Assign traits to the data type `T`.  For example:
-
-```julia
-@assign Duck with Fly,Swim
-```
-
-is translated to something like:
-
-```julia
-flytrait(::Duck) = CanFly()
-swimtrait(::Duck) = CanSwim()
-```
-
-where `x` is the name of the trait `X` in all lowercase, and `T` is the type
-being assigned with the trait `X`.
-"""
-macro assign(T::Symbol, with::Symbol, traits::Union{Expr,Symbol})
-    usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
-    with === :with || throw(SyntaxError(usage))
-
-    expressions = Expr[]
-    trait_syms = traits isa Expr ? traits.args : [traits]
-    for t in trait_syms
-        trait_function = trait_func_name(t)
-        prefixes = get_prefix(__module__, t)
-        can_prefix = prefixes[1]
-        can_type = Symbol("$can_prefix$t")
-
-        # Add an expression like: <trait>trait(::T) = Can<Trait>()
-        # e.g. flytrait(::Duck) = CanFly()
-        push!(expressions,
-            Expr(:(=),
-                Expr(:call, trait_function, Expr(:(::), T)),
-                Expr(:call, can_type)))
-
-        # e.g. BinaryTraits.assign(MyModule, Duck, CanFly)
-        push!(expressions, :(
-            BinaryTraits.assign($T, $can_type)
-        ))
-    end
-    expr = quote
-        $(expressions...)
-        nothing
-    end
-    display_expanded_code(expr)
-    return esc(expr)
-end
-
-# Helper functions
 
 """
 Parse arguments for the @trait macro.

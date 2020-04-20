@@ -211,7 +211,7 @@ module Interfaces
     # no contract requirements (code coverage)
     struct Kiwi end
 
-    # weird argument types in contract specs 
+    # weird argument types in contract specs
     @trait Creep
     @implement CanCreep by creep1(a::Int=5) # argument assignment
     @implement CanCreep by creep2({}) # invalid argument
@@ -224,37 +224,37 @@ module Interfaces
     function test()
         @testset "Interface validation" begin
 
-            bird_check = check(Bird)
+            bird_check = @check(Bird)
             @test bird_check.result == true
             @test bird_check.implemented |> length == 3
             @test bird_check.misses |> length == 0
 
-            chicken_check = check(Chicken)
+            chicken_check = @check(Chicken)
             @test chicken_check.result == false
             @test chicken_check.implemented |> length == 0
             @test chicken_check.misses |> length == 3
 
-            duck_check = check(Duck)
+            duck_check = @check(Duck)
             @test duck_check.result == false
             @test duck_check.implemented |> length == 1
             @test duck_check.misses |> length == 2
 
-            flamingo_check = check(Flamingo)
+            flamingo_check = @check(Flamingo)
             @test flamingo_check.result == true
             @test flamingo_check.implemented |> length == 4
             @test flamingo_check.misses |> length == 0
 
-            crane_check = check(Crane)
+            crane_check = @check(Crane)
             @test crane_check.result == false
             @test crane_check.implemented |> length == 3
             @test crane_check.misses |> length == 1
 
-            penguin_check = check(Penguin)
+            penguin_check = @check(Penguin)
             @test penguin_check.result == false
             @test penguin_check.implemented |> length == (SUPPORT_KWARGS ? 7 : 4)
             @test penguin_check.misses |> length == (SUPPORT_KWARGS ? 2 : 1)
 
-            rabbit_check = check(Rabbit)
+            rabbit_check = @check(Rabbit)
             @test rabbit_check.result == true
 
             # test `show` function
@@ -271,10 +271,10 @@ module Interfaces
             @test buf |> take! |> String |> contains("is missing")
 
             # Bird is assigned with 1 FlyTrait and that requires 3 contracts
-            @test required_contracts(Bird) |> length == 3
+            @test required_contracts(@__MODULE__, Bird) |> length == 3
 
             # Crane requires 4 contracts because it has both Fly and Pretty traits
-            @test required_contracts(Crane) |> length == 4
+            @test required_contracts(@__MODULE__, Crane) |> length == 4
 
             # Penguin
             if SUPPORT_KWARGS
@@ -285,13 +285,13 @@ module Interfaces
             @test buf |> take! |> String |> contains("dive6")
 
             # has no interface requirements
-            check_kiwi = check(Kiwi)
+            check_kiwi = @check(Kiwi)
             @test check_kiwi.result
             show(buf, check_kiwi)
             @test buf |> take! |> String |> contains("has no interface contract")
 
             # strange argument types are both accepted
-            check_snake = check(Snake)
+            check_snake = @check(Snake)
             @test check_snake.result
             @test check_snake.implemented |> length == 2
 
@@ -315,6 +315,7 @@ module Verbose
         end)
     end
 
+    @trait Scratch
     struct Cat end
 
     # Testing verbose mode
