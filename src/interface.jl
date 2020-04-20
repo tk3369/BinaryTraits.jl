@@ -82,7 +82,7 @@ function check(m::Module, T::Assignable)
             end
         end
     end
-    return InterfaceReview(type = T, result = all_good,
+    return InterfaceReview(data_type = T, result = all_good,
                 implemented = implemented_contracts,
                 misses = missing_contracts)
 end

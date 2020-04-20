@@ -45,13 +45,13 @@ end
 An InterfaceReview object contains the validation results of an interface.
 
 # Fields
-- `type`: the type being checked
+- `data_type`: the type being checked
 - `result`: true if the type fully implements all required contracts
 - `implemented`: an array of implemented contracts
 - `misses`: an array of unimplemented contracts
 """
 @Base.kwdef struct InterfaceReview
-    type::Assignable
+    data_type::Assignable
     result::Bool
     implemented::Vector{Contract}
     misses::Vector{Contract}
@@ -59,7 +59,7 @@ end
 
 function Base.show(io::IO, ir::InterfaceReview)
     T = InterfaceReview
-    irtype = ir.type
+    irtype = ir.data_type
     if length(ir.implemented) == length(ir.misses) == 0
         print(io, "✅ $(irtype) has no interface contract requirements.")
     end
