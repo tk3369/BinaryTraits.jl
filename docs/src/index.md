@@ -29,7 +29,7 @@ struct Duck end
 nothing # hide
 ```
 
-Next, how do you dispatch by traits?  You just follow the Holy Trait pattern:
+Next, how do you dispatch by traits?  Just follow the Holy Trait pattern:
 
 ```@example ex
 tickle(x) = tickle(flytrait(x), swimtrait(x), x)
