@@ -28,7 +28,7 @@ in our [documentation](https://tk3369.github.io/BinaryTraits.jl/dev).
 
 # Define your data type and implementation
 struct Bird end
-fly(::Bird, direction::Float64, speed::Float64) = "Wohoo!"
+fly(::Bird, destination::Location, speed::Float64) = "Wohoo! Arrived! 🐦"
 
 # Assign your data type to a trait
 @assign Bird with Fly
