@@ -6,7 +6,7 @@ Every motivation starts with an example.  In this page, we cover the following t
 4. Checking if a data type fully implements all contracts from its traits
 5. Applying Holy Traits pattern
 
-# Example: tickling a duck and a dog
+## Example: tickling a duck and a dog
 
 Suppose that we are modeling the ability of animals.  So we can define traits as follows:
 
