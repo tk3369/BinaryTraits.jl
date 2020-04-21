@@ -1,5 +1,3 @@
-# User Guide
-
 ## Traits
 
 ### The @trait macro
