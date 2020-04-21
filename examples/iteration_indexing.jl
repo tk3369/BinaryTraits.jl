@@ -19,12 +19,12 @@ Base.iterate(S::Squares, state=1) = state > S.count ? nothing : (state*state, st
 
 # Let's assign the Squares type to Iterable
 @assign Squares with Iterable
-check(Squares)
+@check(Squares)
 #=
-julia> check(Squares)
+julia> @check(Squares)
 ✅ Squares has implemented:
-1. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
-2. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
 =#
 
 # -----------------------------------------------------------------------------
@@ -48,38 +48,42 @@ function Base.getindex(S::Squares, i)
 end
 
 @assign Squares with Indexable
-check(Squares)
+@check(Squares)
 #=
-julia> check(Squares)
 ✅ Squares has implemented:
-1. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
+1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
 2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
-3. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+3. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
 =#
 
 # We want to have the traits for indexing from beginning and at the end
 @assign Squares with IndexableFromBeginning, IndexableAtTheEnd
-check(Squares)
+@check(Squares)
 #=
+julia> @check(Squares)
+┌ Warning: Missing implementation: IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(::Squares)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
+┌ Warning: Missing implementation: IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::Squares)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
 ✅ Squares has implemented:
-1. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
+1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
 2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
-3. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+3. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
 ❌ Squares is missing these implementations:
-1. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::<Type>)::Any
-2. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(::<Type>)::Any
+1. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(::<Type>)::Any
+2. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::<Type>)::Any
 =#
 
 # Let's implement them now.
 Base.firstindex(S::Squares) = 1
 Base.lastindex(S::Squares) = length(S)
-check(Squares)
+@check(Squares)
 #=
-julia> check(Squares)
+julia> @check(Squares)
 ✅ Squares has implemented:
-1. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
-2. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::<Type>)::Any
+1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
 3. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(::<Type>)::Any
-4. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
-5. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
+4. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::<Type>)::Any
+5. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
 =#

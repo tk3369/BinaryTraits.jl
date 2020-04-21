@@ -6,20 +6,20 @@
 @trait
 @assign
 @implement
+@check
 ```
 ## Functions
 
 ```@docs
 traits
-check
-required_contracts
 istrait
+required_contracts
 ```
 
 ## Types
 
 ```@docs
-BinaryTraits.InterfaceReview
 BinaryTraits.Assignable
 BinaryTraits.Contract
+BinaryTraits.InterfaceReview
 ```

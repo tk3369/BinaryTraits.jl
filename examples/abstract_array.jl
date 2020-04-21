@@ -29,35 +29,36 @@ const IntVarArg = Vararg{Int, N} where N
 const Array1DInt = Array{Int,1}
 
 @assign Array1DInt with Dimension
-check(typeof(Array1DInt))
+@check(Array1DInt)
 #=
-julia> check(typeof(int_array))
+julia> @check(Array1DInt)
 ✅ Array{Int64,1} has implemented:
 1. DimensionTrait: HasDimension ⇢ size(::<Type>)::Tuple
+
 =#
 
 @assign Array1DInt with LinearIndexing
-check(typeof(Array1DInt))
+@check(Array1DInt)
 #=
-julia> check(typeof(int_array))
+julia> @check(Array1DInt)
 ✅ Array{Int64,1} has implemented:
-1. LinearIndexingTrait: IsLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
-2. LinearIndexingTrait: IsLinearIndexing ⇢ setindex!(::<Type>, ::Int64)::Any
+1. LinearIndexingTrait: HasLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
+2. LinearIndexingTrait: HasLinearIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Int64)::Any
 3. DimensionTrait: HasDimension ⇢ size(::<Type>)::Tuple
 =#
 
 # 1D array is a specialized version of CartesianIndexing.
 # Let's verify.
 @assign Array1DInt with CartesianIndexing
-check(Array1DInt)
+@check(Array1DInt)
 #=
-julia> check(Array1DInt)
+julia> @check(Array1DInt)
 ✅ Array{Int64,1} has implemented:
-1. LinearIndexingTrait: IsLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
-2. LinearIndexingTrait: IsLinearIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Int64)::Any
-3. DimensionTrait: HasDimension ⇢ size(::<Type>)::Tuple
+1. LinearIndexingTrait: HasLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
+2. LinearIndexingTrait: HasLinearIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Int64)::Any
+3. CartesianIndexingTrait: HasCartesianIndexing ⇢ getindex(::<Type>, ::Vararg{Int64,N} where N)::Any
 4. CartesianIndexingTrait: HasCartesianIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Vararg{Int64,N} where N)::Any
-5. CartesianIndexingTrait: HasCartesianIndexing ⇢ getindex(::<Type>, ::Vararg{Int64,N} where N)::Any
+5. DimensionTrait: HasDimension ⇢ size(::<Type>)::Tuple
 =#
 
 # -----------------------------------------------------------------------------
@@ -72,11 +73,11 @@ Base.size(S::SquaresVector) = (S.count,)
 Base.getindex(S::SquaresVector, i::Int) = i*i
 
 @assign SquaresVector with Dimension,LinearIndexing
-check(SquaresVector)
+@check(SquaresVector)
 #=
-julia> check(SquaresVector)
+julia> @check(SquaresVector)
 ✅ SquaresVector has implemented:
-1. LinearIndexingTrait: IsLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
-2. LinearIndexingTrait: IsLinearIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Int64)::Any
+1. LinearIndexingTrait: HasLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
+2. LinearIndexingTrait: HasLinearIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Int64)::Any
 3. DimensionTrait: HasDimension ⇢ size(::<Type>)::Tuple
 =#

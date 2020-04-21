@@ -1,179 +1,75 @@
 # used for display purpose only
 const TYPE_PLACEHOLDER = "::<Type>"
 
-"""
-    traits_map
+"Create a new interface map"
+make_interface_map() = InterfaceMap()
 
-The `traits_map` maps a data type to the Can-type of the asigned traits.
 
-For example, the `Duck` and `Dog` types and then assign them with `Fly`
-and `Swim` traits.  The map would look like this:
-
-```julia
-julia> BinaryTraits.traits_map
-Dict{Union{DataType, UnionAll},Set{DataType}} with 2 entries:
-  Dog  => Set(DataType[CanSwim])
-  Duck => Set(DataType[CanSwim, CanFly])
-```
-"""
-const traits_map = Dict{Assignable,Set{DataType}}()
-
-"""
-    traits(T::Assignable)
-
-Returns a set of Can-types that the data type `T` exhibits.
-See also [`@assign`](@ref).
-"""
-function traits(T::Assignable)
-    base = get!(traits_map, T) do; Set{DataType}() end
-    for (Tmap, s) in pairs(traits_map)
-        if T !== Tmap && T <: Tmap
-            union!(base, s)
-        end
-    end
-    return base
+"Get a reference to the module's interface map."
+function get_interface_map(m::Module)
+    isdefined(m, :__binarytraits_interface_map) || error("Bug, interface map is missing.")
+    return m.__binarytraits_interface_map
 end
 
 """
-    assign(T::Assignable, can_type::DataType)
-
-Assign data type `T` with the specified Can-type of a trait.
-"""
-function assign(T::Assignable, can_type::DataType)
-    traits_set = get!(traits_map, T) do; Set{DataType}() end
-    push!(traits_set, can_type)
-    return nothing
-end
-
-# Managing interface contracts
-
-"""
-    Contract{T <: DataType, F <: Function, N}
-
-A contract refers to a function defintion `func` that is required to satisfy
-the Can-type of a trait. The function `func` must accepts `args` and returns `ret`.
-
-# Fields
-- `can_type`: can-type of a trait e.g. `CanFly`
-- `func`: function that must be implemented to satisfy this trait
-- `args`: argument types of the function `func`
-- `kwargs`: keyword argument names of the function `func`
-- `ret`: return type of the function `func`
-"""
-struct Contract{T <: DataType, F <: Function}
-    can_type::T
-    func::F
-    args::Tuple
-    kwargs::Tuple
-    ret::Union{DataType,Nothing}
-end
-
-function Base.show(io::IO, c::Contract)
-    typ = Symbol(TYPE_PLACEHOLDER)
-    args = string("(", join([typ, c.args...], ", ::"))
-    if length(c.kwargs) > 0
-        args = string(args, "; ", join(c.kwargs, ", "))
-    end
-    args = string(args, ")")
-    trait = supertype(c.can_type)
-    print(io, "$(trait): $(c.can_type) ⇢ $(c.func)$(args)")
-    c.ret !== nothing && print(io, "::$(c.ret)")
-end
-
-"""
-    interface_map
-
-The `interface_map` maps a data type to a set of Contracts.
-"""
-const interface_map = Dict{DataType,Set{Contract}}()
-
-"""
-    register(can_type::DataType, func::Function, args::NTuple{N,DataType}, ret::DataType) where N
+    register(m::Module, can_type::DataType, func::Function, args::NTuple{N,DataType},
+             kwargs::NTuple{N,Symbol}, ret::DataType) where N
 
 Register a function `func` with the specified `can_type` type.
-The `func` is expected to take arguments `args` and return
-a value of type `ret`.
+The `func` is expected to take arguments `args` and keyword arguments `kwargs`
+and return a value of type `ret`.
 """
-function register(can_type::DataType,
+function register(m::Module,
+                  can_type::DataType,
                   func::Function,
                   args::Tuple,
                   kwargs::NTuple{N,Symbol},
                   ret::Union{DataType,Nothing} = nothing) where N
+    interface_map = get_interface_map(m)
     contracts = get!(interface_map, can_type) do; Set{Contract}() end
     push!(contracts, Contract(can_type, func, args, kwargs, ret))
     return nothing
 end
 
 """
-    contracts(can_type::DataType)
+    contracts(m::Module, can_type::DataType)
 
-Returns a set of Contracts that are required to be implemented
-for `can_type`.
+Returns a set of [`Contracts`](@ref) that are required to be implemented
+for objects that exihibits the specific `can_type` trait.
 """
-function contracts(can_type::DataType)
+function contracts(m::Module, can_type::DataType)
+    interface_map = get_interface_map(m)
+    composite_traits = get_composite_trait_map(m)
     current_contracts = get(interface_map, can_type, Set{Contract}())
     if haskey(composite_traits, can_type)
-        contracts_array = contracts.(composite_traits[can_type])
-        @debug "after recusion" contracts_array
+        contracts_array = contracts.(Ref(m), composite_traits[can_type])
         underlying_contracts = union(contracts_array...)
-        @debug "combining" current_contracts underlying_contracts
         return union(current_contracts, underlying_contracts)
     else
-        @debug "returning" current_contracts
         return current_contracts
     end
 end
 
+# Convenience macro so the client does not need to provide module argument
 """
-    InterfaceReview
-
-An InterfaceReview object contains the validation results of an interface.
-
-# Fields
-- `type`: the type being checked
-- `result`: true if the type fully implements all required contracts
-- `implemented`: an array of implemented contracts
-- `misses`: an array of unimplemented contracts
-"""
-@Base.kwdef struct InterfaceReview
-    type::Assignable
-    result::Bool
-    implemented::Vector{Contract}
-    misses::Vector{Contract}
-end
-
-function Base.show(io::IO, ir::InterfaceReview)
-    T = InterfaceReview
-    irtype = ir.type
-    if length(ir.implemented) == length(ir.misses) == 0
-        print(io, "✅ $(irtype) has no interface contract requirements.")
-    end
-    if length(ir.implemented) > 0
-        println(io, "✅ $(irtype) has implemented:")
-        for (i, c) in enumerate(ir.implemented)
-            println(io, "$(i). $c")
-        end
-    end
-    if length(ir.misses) > 0
-        println(io, "❌ $(irtype) is missing these implementations:")
-        for (i, c) in enumerate(ir.misses)
-            println(io, "$(i). $c")
-        end
-    end
-end
-
-"""
-    check(T::Assignable)
+    @check(T::Assignable)
 
 Check if the data type `T` has fully implemented all trait functions that it was
 previously assigned.  See also: [`@assign`](@ref).
 """
-function check(T::Assignable)
+macro check(T)
+    mod = __module__
+    return esc(quote
+        BinaryTraits.check($mod, $T)
+    end)
+end
+
+function check(m::Module, T::Assignable)
     all_good = true
     implemented_contracts = Contract[]
     missing_contracts = Contract[]
-    for can_type in traits(T)
-        for c in contracts(can_type)
+    for can_type in traits(m, T)
+        for c in contracts(m, can_type)
             tuple_type = Tuple{T, c.args...}
             method_exists = has_method(c.func, tuple_type, c.kwargs)
             sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
@@ -186,19 +82,19 @@ function check(T::Assignable)
             end
         end
     end
-    return InterfaceReview(type = T, result = all_good,
+    return InterfaceReview(data_type = T, result = all_good,
                 implemented = implemented_contracts,
                 misses = missing_contracts)
 end
 
 """
-    required_contracts(T::Assignable)
+    required_contracts(m::Module, T::Assignable)
 
 Return a set of contracts that is required to be implemented for
 the provided type `T`.
 """
-function required_contracts(T::Assignable)
-    c = [contracts(t) for t in traits(T)]  # returns array of set of contracts
+function required_contracts(m::Module, T::Assignable)
+    c = [contracts(m, t) for t in traits(m, T)]  # returns array of set of contracts
     return union(c...)
 end
 
@@ -234,10 +130,19 @@ macro implement(can_type, by, sig)
     # @info "sig" func_name func_arg_names func_arg_types
 
     kwtuple = tuple(kwarg_names...)
+    mod = __module__
+
     # generate code
     expr = quote
         function $func_name end
-        BinaryTraits.register($can_type, $func_name,
+
+        # Keep copy of interface map in client module
+        global __binarytraits_interface_map
+        if !@isdefined(__binarytraits_interface_map)
+            __binarytraits_interface_map = BinaryTraits.make_interface_map()
+        end
+
+        BinaryTraits.register($mod, $can_type, $func_name,
                               ($(func_arg_types...),), $kwtuple, $return_type)
     end
     display_expanded_code(expr)
