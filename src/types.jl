@@ -92,14 +92,14 @@ end
 Map a data type to the Can-type of its assigned traits.
 For example, `Dog => Set([CanSwim, CanRun])`.
 """
-const TraitsMap = IdDict{Assignable,Set{DataType}}
+const TraitsMap = Dict{Assignable,Set{DataType}}
 
 """
     InterfaceMap
 
 Map a Can-type to a set of interface contracts.  See [`Contract`](@ref).
 """
-const InterfaceMap = IdDict{DataType,Set{Contract}}
+const InterfaceMap = Dict{DataType,Set{Contract}}
 
 """
     PrefixMap
@@ -107,7 +107,7 @@ const InterfaceMap = IdDict{DataType,Set{Contract}}
 Maps a prefix symbol to the positive/negatiave prefix symbols
 e.g. `:Fly => (:Can, :Cannot)`.
 """
-const PrefixMap = IdDict{Symbol,Tuple{Symbol,Symbol}}
+const PrefixMap = Dict{Symbol,Tuple{Symbol,Symbol}}
 
 """
     CompositeTraitMap
@@ -115,4 +115,4 @@ const PrefixMap = IdDict{Symbol,Tuple{Symbol,Symbol}}
 Maps a composite can-type to a set of its underlying can-types.
 e.g. `CanFlySwim => Set([CanFly, CanSwim])`.
 """
-const CompositeTraitMap = IdDict{DataType,Set{DataType}}
+const CompositeTraitMap = Dict{DataType,Set{DataType}}

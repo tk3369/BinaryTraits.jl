@@ -1,7 +1,7 @@
 
 "Create a new traits map"
 make_traits_map() = TraitsMap()
-const EMPTY_TRAITS_MAP = IdDict{Assignable,Set{DataType}}()
+const EMPTY_TRAITS_MAP = Dict{Assignable,Set{DataType}}()
 
 "Get a reference to the module's composite trait map."
 function get_traits_map(m::Module)
