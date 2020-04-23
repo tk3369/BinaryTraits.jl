@@ -1,6 +1,6 @@
 # used for display purpose only
 const TYPE_PLACEHOLDER = "::<Type>"
-const EMPTY_INTERFACE_MAP = Base.ImmutableDict{DataType,Set{Contract}}()
+const EMPTY_INTERFACE_MAP = IdDict{DataType,Set{Contract}}()
 
 "Create a new interface map"
 make_interface_map() = InterfaceMap()

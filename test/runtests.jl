@@ -2,6 +2,9 @@ using Test
 module SingleTrait
     using BinaryTraits, Test
     struct Bird end
+
+    @test check(Bird).result == true # everything ok without traits defined
+
     @trait Fly
     @assign Bird with CanFly
 
@@ -134,8 +137,12 @@ module Interfaces
 
     const SUPPORT_KWARGS = VERSION >= v"1.2"
 
+    struct Bird end
     # Fly trait requires multiple contracts with variety of func signatures
     @trait Fly
+    @assign Bird with CanFly
+    @test check(Bird).result == true # everything ok without interface contracts
+
     @implement CanFly by liftoff()
     @implement CanFly by speed(resistence::Float64)::Float64
     @implement CanFly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
@@ -145,8 +152,6 @@ module Interfaces
     @implement IsPretty by look_at_the_mirror_daily()::Bool
 
     # Bird satisfies all contracts from FlyTrait by concrete type
-    struct Bird end
-    @assign Bird with CanFly
     liftoff(::Bird) = "hi ho!"
     speed(::Bird, resistence::Float64) = 100 - resistence
     flyto(::Bird, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
