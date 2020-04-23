@@ -1,7 +1,7 @@
 
 "Create a new traits map"
 make_traits_map() = TraitsMap()
-const EMPTY_TRAITS_MAP = Dict{Assignable,Set{DataType}}()
+const EMPTY_TRAITS_MAP = Base.ImmutableDict{Assignable,Set{DataType}}()
 
 "Get a reference to the module's composite trait map."
 function get_traits_map(m::Module)
@@ -21,9 +21,9 @@ See also [`@assign`](@ref).
 """
 function traits(m::Module, T::Assignable)
     traits_map = get_traits_map(m)
-    base = get!(traits_map, T) do; Set{DataType}() end
+    base = Set{DataType}()
     for (Tmap, s) in pairs(traits_map)
-        if T !== Tmap && T <: Tmap
+        if T <: Tmap
             union!(base, s)
         end
     end
