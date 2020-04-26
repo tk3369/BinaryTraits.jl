@@ -2,7 +2,7 @@ module BinaryTraits
 
 using MacroTools
 
-export @trait, @assign, @implement, @check
+export @trait, @assign, @implement
 export check, istrait, traits, required_contracts
 
 include("types.jl")

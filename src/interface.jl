@@ -55,20 +55,12 @@ function contracts(can_type::DataType)
     end
 end
 
-# Convenience macro so the client does not need to provide module argument
 """
-    @check(T::Assignable)
+    check(T::Assignable)
 
 Check if the data type `T` has fully implemented all trait functions that it was
 previously assigned.  See also: [`@assign`](@ref).
 """
-macro check(T)
-    mod = __module__
-    return esc(quote
-        BinaryTraits.check($T)
-    end)
-end
-
 function check(T::Assignable)
     m = parentmodule(T)
     all_good = true
