@@ -101,7 +101,7 @@ end
     @implement <CanType> by <FunctionSignature>
 
 Register function signature for the specified `CanType` of a trait.
-You can use the [`check`](@ref) macro to verify your implementation
+You can use the [`check`](@ref) function to verify your implementation
 after these interface contracts are registered.  The function
 signature only needs to specify required arguments other than
 the object itself.  Also, return type is optional and in that case

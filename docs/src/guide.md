@@ -171,16 +171,16 @@ so that we have a high confidence about our code.  Julia is a dynamic system
 and so generally speaking we do not have any static type checking in place.
 BinaryTraits now gives you that capability.
 
-The `@check` macro can be used to verify whether your data type has fully
+The `check` function can be used to verify whether your data type has fully
 implemented its assigned traits and respective interface contracts.  The usage
-is embarassingly simple.  You can just call the `check` function with the
-data typ:
+is embarrassingly simple.  You can just call the `check` function with the
+data type:
 
 ```@repl guide
-@check(Bird)
+check(Bird)
 ```
 
-The `@check` macro returns an `InterfaceReview` object, which gives you the
+The `check` function returns an `InterfaceReview` object, which gives you the
 validation result.  The warnings are generated so that it comes up in the log file.
 The following text is the display for the `InterfaceReview` object.  It is designed
 to clearly show you what has been implemented and what's not.
@@ -192,7 +192,7 @@ to clearly show you what has been implemented and what's not.
     contracts for `CanFlySwim`.
 
 !!! note
-    One way to utilize the `@check` macro is to put that in your module's `__init__` function
+    One way to utilize the `check` function is to put that in your module's `__init__` function
     so that it is verified before the package is used.  Another option is to do that in your
     test suite and so it will be run every single time.
 
