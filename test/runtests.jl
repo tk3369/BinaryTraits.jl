@@ -2,8 +2,11 @@ using Test
 module SingleTrait
     using BinaryTraits, Test
     struct Bird end
+
+    @test check(Bird).result == true # everything ok without traits defined
+
     @trait Fly
-    @assign Bird with Fly
+    @assign Bird with CanFly
 
     function test()
         @testset "Single Trait" begin
@@ -23,8 +26,8 @@ module MultipleTraits
     struct Dog end
     @trait Fly
     @trait Swim
-    @assign Duck with Fly,Swim
-    @assign Dog with Swim
+    @assign Duck with CanFly, CanSwim
+    @assign Dog with CanSwim
     function test()
         @testset "Multiple Traits" begin
             @test flytrait(Dog()) == CannotFly()
@@ -50,7 +53,7 @@ end
 module CustomPrefixes
     using BinaryTraits, Test
     @trait Iterable prefix Is,Not
-    @assign AbstractArray with Iterable
+    @assign AbstractArray with IsIterable
     next(x) = next(iterabletrait(x), x)
     next(::IsIterable, x) = iterate(x)
     next(::NotIterable, x) = :toobad
@@ -73,12 +76,12 @@ module CompositeTraits
 
     # assignments
     struct Acura end
-    @assign Acura with Move,CarryPassenger,FourWheels,Engine
+    @assign Acura with CanMove, CanCarryPassenger, HasFourWheels, HasEngine
     struct Tricycle end
-    @assign Tricycle with Move,CarryPassenger
+    @assign Tricycle with CanMove, CanCarryPassenger
 
     # composite
-    @trait Car prefix Is,Not with Move,CarryPassenger,FourWheels,Engine
+    @trait Car prefix Is,Not with CanMove, CanCarryPassenger, HasFourWheels, HasEngine
 
     function test()
         @testset "Composite" begin
@@ -134,8 +137,12 @@ module Interfaces
 
     const SUPPORT_KWARGS = VERSION >= v"1.2"
 
+    struct Bird end
     # Fly trait requires multiple contracts with variety of func signatures
     @trait Fly
+    @assign Bird with CanFly
+    @test check(Bird).result == true # everything ok without interface contracts
+
     @implement CanFly by liftoff()
     @implement CanFly by speed(resistence::Float64)::Float64
     @implement CanFly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
@@ -145,42 +152,40 @@ module Interfaces
     @implement IsPretty by look_at_the_mirror_daily()::Bool
 
     # Bird satisfies all contracts from FlyTrait by concrete type
-    struct Bird end
-    @assign Bird with Fly
     liftoff(::Bird) = "hi ho!"
     speed(::Bird, resistence::Float64) = 100 - resistence
     flyto(::Bird, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
 
     # Duck satisfies partial contracts from FlyTrait by concrete type
     struct Duck end
-    @assign Duck with Fly
+    @assign Duck with CanFly
     liftoff(::Duck) = "hi ho!"
 
     # Chicken does not satisfy any contract from FlyTrait
     struct Chicken end
-    @assign Chicken with Fly
+    @assign Chicken with CanFly
 
     # Flamingo exhibits both Fly and Pretty traits
     struct Flamingo end
-    @assign Flamingo with Fly,Pretty  # composite trait
+    @assign Flamingo with CanFly, IsPretty  # composite trait
     liftoff(::Flamingo) = "wee!"
     speed(::Flamingo, resistence::Float64) = 150 - resistence
     flyto(::Flamingo, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
     look_at_the_mirror_daily(::Flamingo) = true
 
     # Test composite traits - total underlying 4 contracts required for this!
-    @trait FlyPretty prefix Is,Not with Fly,Pretty
+    @trait FlyPretty prefix Is,Not with CanFly, IsPretty
 
     # Crane partially satisfies FlyTrait and fully satisfies Pretty trait
     struct Crane end
-    @assign Crane with FlyPretty
+    @assign Crane with IsFlyPretty
     speed(::Crane, resistence::Float64) = 150 - resistence
     flyto(::Crane, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
     look_at_the_mirror_daily(::Crane) = true
 
     struct Penguin end
     @trait Dive
-    @assign Penguin with Dive
+    @assign Penguin with CanDive
     @implement CanDive by dive1(::Integer)           # no argument name
     @implement CanDive by dive2(::Vector{<:Integer}) # parameterized type
     if SUPPORT_KWARGS
@@ -207,7 +212,7 @@ module Interfaces
     abstract type Animal end
     struct Rabbit <: Animal end
     @trait Eat
-    @assign Animal with Eat
+    @assign Animal with CanEat
     @implement CanEat by eat()
     eat(::Animal) = 1
 
@@ -219,43 +224,43 @@ module Interfaces
     @implement CanCreep by creep1(a::Int=5) # argument assignment
 
     struct Snake end
-    @assign Snake with Creep
+    @assign Snake with CanCreep
     creep1(::Snake, ::Integer) = 1
 
     function test()
         @testset "Interface validation" begin
 
-            bird_check = @check(Bird)
+            bird_check = check(Bird)
             @test bird_check.result == true
             @test bird_check.implemented |> length == 3
             @test bird_check.misses |> length == 0
 
-            chicken_check = @check(Chicken)
+            chicken_check = check(Chicken)
             @test chicken_check.result == false
             @test chicken_check.implemented |> length == 0
             @test chicken_check.misses |> length == 3
 
-            duck_check = @check(Duck)
+            duck_check = check(Duck)
             @test duck_check.result == false
             @test duck_check.implemented |> length == 1
             @test duck_check.misses |> length == 2
 
-            flamingo_check = @check(Flamingo)
+            flamingo_check = check(Flamingo)
             @test flamingo_check.result == true
             @test flamingo_check.implemented |> length == 4
             @test flamingo_check.misses |> length == 0
 
-            crane_check = @check(Crane)
+            crane_check = check(Crane)
             @test crane_check.result == false
             @test crane_check.implemented |> length == 3
             @test crane_check.misses |> length == 1
 
-            penguin_check = @check(Penguin)
+            penguin_check = check(Penguin)
             @test penguin_check.result == false
             @test penguin_check.implemented |> length == (SUPPORT_KWARGS ? 7 : 4)
             @test penguin_check.misses |> length == (SUPPORT_KWARGS ? 2 : 1)
 
-            rabbit_check = @check(Rabbit)
+            rabbit_check = check(Rabbit)
             @test rabbit_check.result == true
 
             # test `show` function
@@ -272,10 +277,10 @@ module Interfaces
             @test buf |> take! |> String |> contains("is missing")
 
             # Bird is assigned with 1 FlyTrait and that requires 3 contracts
-            @test required_contracts(@__MODULE__, Bird) |> length == 3
+            @test required_contracts(Bird) |> length == 3
 
             # Crane requires 4 contracts because it has both Fly and Pretty traits
-            @test required_contracts(@__MODULE__, Crane) |> length == 4
+            @test required_contracts(Crane) |> length == 4
 
             # Penguin
             if SUPPORT_KWARGS
@@ -286,13 +291,13 @@ module Interfaces
             @test buf |> take! |> String |> contains("dive6")
 
             # has no interface requirements
-            check_kiwi = @check(Kiwi)
+            check_kiwi = check(Kiwi)
             @test check_kiwi.result
             show(buf, check_kiwi)
             @test buf |> take! |> String |> contains("has no interface contract")
 
             # strange argument types are both accepted
-            check_snake = @check(Snake)
+            check_snake = check(Snake)
             @test check_snake.result
             @test check_snake.implemented |> length == 1
 
@@ -327,7 +332,34 @@ module Verbose
         BinaryTraits.set_verbose(true)
         @testset "Verbose" begin
             @testme "struct CanScratch" @trait Scratch
-            @testme "scratchtrait(::Cat) = CanScratch()" @assign Cat with Scratch
+            @testme "scratchtrait(::Cat) = CanScratch()" @assign Cat with CanScratch
+        end
+    end
+end
+
+module CrossModule
+    using Test, Logging, BinaryTraits
+    module X
+        using BinaryTraits
+        @trait RowTable prefix Is,Not
+        @implement IsRowTable by row(::Integer)
+    end
+
+    module Y
+        using Test
+        using BinaryTraits
+        using ..X
+        struct AwesomeTable end
+        @assign AwesomeTable with X.IsRowTable
+        r = check(AwesomeTable)
+        @test r.implemented |> length == 0
+        X.row(::AwesomeTable, ::Number) = 1
+    end
+
+    function test()
+        @testset "cross-module implementation" begin
+            r = check(Y.AwesomeTable)
+            @test r.implemented |> length == 1    
         end
     end
 end
@@ -341,4 +373,5 @@ end
     import .SyntaxErrors;       SyntaxErrors.test()
     import .Interfaces;         Interfaces.test()
     import .Verbose;            Verbose.test()
+    import .CrossModule;        CrossModule.test()
 end
