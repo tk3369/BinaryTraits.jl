@@ -25,6 +25,13 @@ For example, it would be `flytrait` for a `Fly` trait.
 """
 trait_func_name(t) = Symbol(lowercase(string(t)) * "trait")
 
+function trait_func_name(mod, t)
+    sup = supertype(mod.eval(t))
+    tn = Symbol(lowercase(string(nameof(sup))))
+    modn = fullname(parentmodule(sup))
+    foldl((a,b) -> Expr(:(.), a, QuoteNode(b)), (modn..., tn))
+end
+
 """
 Check if `x` is an expression of a tuple of symbols.
 If `n` is specified then also check whether the tuple

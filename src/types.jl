@@ -102,14 +102,6 @@ Map a Can-type to a set of interface contracts.  See [`Contract`](@ref).
 const InterfaceMap = Dict{DataType,Set{Contract}}
 
 """
-    PrefixMap
-
-Maps a prefix symbol to the positive/negatiave prefix symbols
-e.g. `:Fly => (:Can, :Cannot)`.
-"""
-const PrefixMap = Dict{Symbol,Tuple{Symbol,Symbol}}
-
-"""
     CompositeTraitMap
 
 Maps a composite can-type to a set of its underlying can-types.

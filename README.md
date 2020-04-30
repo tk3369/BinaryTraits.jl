@@ -31,10 +31,10 @@ struct Bird end
 fly(::Bird, destination::Location, speed::Float64) = "Wohoo! Arrived! 🐦"
 
 # Assign your data type to a trait
-@assign Bird with Fly
+@assign Bird with CanFly
 
 # Verify that your implementation is correct
-@check(Bird)
+check(Bird)
 ```
 
 ## Main Features
@@ -46,6 +46,7 @@ and logged as [issues in this repo](https://github.com/tk3369/BinaryTraits.jl/is
 * Define composite traits that exhibits all of the underlying traits
 * Define interface contracts required for a trait
 * Verify if your data type fully implements all interface contracts
+* Allow traits and assigned-to data types are located in different modules
 
 ## Credits
 
