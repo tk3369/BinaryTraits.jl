@@ -1,17 +1,4 @@
 
-"Create a new traits map"
-make_traits_map() = TraitsMap()
-const EMPTY_TRAITS_MAP = Dict{Assignable,Set{DataType}}()
-
-"Get a reference to the module's composite trait map."
-function get_traits_map(m::Module)
-    if isdefined(m, :__binarytraits_traits_map)
-        m.__binarytraits_traits_map
-    else
-        EMPTY_TRAITS_MAP
-    end
-end
-
 """
     traits(m::Module, T::Assignable)
 
@@ -36,9 +23,7 @@ end
 Assign data type `T` with the specified Can-type from a trait.
 """
 function assign(m::Module, T::Assignable, can_type::DataType)
-    traits_map = get_traits_map(m)
-    traits_set = get!(traits_map, T) do; Set{DataType}() end
-    push!(traits_set, can_type)
+    push_traits_map!(m, T, can_type)
     return nothing
 end
 
@@ -91,14 +76,7 @@ function assign_impl(mod, T, traits)
     end
 
     expr = quote
-        # ensure that traits map is allocated
-        global __binarytraits_traits_map
-        if !@isdefined(__binarytraits_traits_map)
-            __binarytraits_traits_map = BinaryTraits.make_traits_map()
-        end
-        # call assign function
         $(expressions...)
-        nothing
     end
 
     display_expanded_code(expr)

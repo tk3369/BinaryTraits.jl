@@ -108,3 +108,19 @@ Maps a composite can-type to a set of its underlying can-types.
 e.g. `CanFlySwim => Set([CanFly, CanSwim])`.
 """
 const CompositeTraitMap = Dict{DataType,Set{DataType}}
+
+"""
+    TraitsStorage
+
+Type keeping all traits-related dynamic data.
+[`TraitsMap`](@ref)
+[`InterfaceMap`](@ref)
+[`CompositeTraitMap`](@ref)
+"""
+struct TraitsStorage
+    traits_map::TraitsMap
+    interface_map::InterfaceMap
+    composite_map::CompositeTraitMap
+    TraitsStorage() = new(TraitsMap(), InterfaceMap(), CompositeTraitMap())
+end
+

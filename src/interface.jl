@@ -1,19 +1,5 @@
 # used for display purpose only
 const TYPE_PLACEHOLDER = "::<Type>"
-const EMPTY_INTERFACE_MAP = Dict{DataType,Set{Contract}}()
-
-"Create a new interface map"
-make_interface_map() = InterfaceMap()
-
-
-"Get a reference to the module's interface map."
-function get_interface_map(m::Module)
-    if isdefined(m, :__binarytraits_interface_map)
-        m.__binarytraits_interface_map
-    else
-        EMPTY_INTERFACE_MAP
-    end
-end
 
 """
     register(m::Module, can_type::DataType, func::Function, args::NTuple{N,DataType},
@@ -29,25 +15,22 @@ function register(m::Module,
                   args::Tuple,
                   kwargs::NTuple{N,Symbol},
                   ret::Union{DataType,Nothing} = nothing) where N
-    interface_map = get_interface_map(m)
-    contracts = get!(interface_map, can_type) do; Set{Contract}() end
-    push!(contracts, Contract(can_type, func, args, kwargs, ret))
+
+    push_interface_map!(m, can_type, Contract(can_type, func, args, kwargs, ret))
     return nothing
 end
 
 """
-    contracts(can_type::DataType)
+    contracts(module, can_type::DataType)
 
 Returns a set of [`Contracts`](@ref) that are required to be implemented
 for objects that exihibits the specific `can_type` trait.
 """
-function contracts(can_type::DataType)
-    m = parentmodule(can_type)
-    interface_map = get_interface_map(m)
-    composite_traits = get_composite_trait_map(m)
-    current_contracts = get(interface_map, can_type) do; Set{Contract}() end
-    if haskey(composite_traits, can_type)
-        contracts_array = contracts.(composite_traits[can_type])
+function contracts(m::Module, can_type::DataType)
+    current_contracts = get_interface_values(m, can_type)
+    subcan_types = get_composite_values(m, can_type)
+    if !isempty(subcan_types)
+        contracts_array = contracts.(Ref(m), subcan_types)
         underlying_contracts = union(contracts_array...)
         return union(current_contracts, underlying_contracts)
     else
@@ -56,45 +39,47 @@ function contracts(can_type::DataType)
 end
 
 """
-    check(T::Assignable)
+    @check(T::Assignable)
+    check(module, T::Assignable)
 
 Check if the data type `T` has fully implemented all trait functions that it was
-previously assigned.  See also: [`@assign`](@ref).
+previously assigned. See also: [`@assign`](@ref).
 """
-function check(T::Assignable)
-    m = parentmodule(T)
+macro check(T)
+    m = __module__
+    esc(:(check($m, $T)))
+end
+function check(m::Module, T::Assignable)
     all_good = true
     implemented_contracts = Contract[]
     missing_contracts = Contract[]
-    for can_type in traits(m, T)
-        for c in contracts(can_type)
-            tuple_type = Tuple{T, c.args...}
-            method_exists = has_method(c.func, tuple_type, c.kwargs)
-            sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
-            if method_exists
-                push!(implemented_contracts, c)
-            else
-                @warn "Missing implementation: $sig"
-                all_good = false
-                push!(missing_contracts, c)
-            end
+    for c in required_contracts(m, T)
+        tuple_type = Tuple{T, c.args...}
+        method_exists = has_method(c.func, tuple_type, c.kwargs)
+        sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
+        if method_exists
+            push!(implemented_contracts, c)
+        else
+            @warn "Missing implementation: $sig"
+            all_good = false
+            push!(missing_contracts, c)
         end
     end
-    return InterfaceReview(data_type = T, result = all_good,
-                implemented = implemented_contracts,
-                misses = missing_contracts)
+    return InterfaceReview(data_type = T,
+                           result = all_good,
+                           implemented = implemented_contracts,
+                           misses = missing_contracts)
 end
 
 """
-    required_contracts(T::Assignable)
+    required_contracts(module, T::Assignable)
 
 Return a set of contracts that is required to be implemented for
 the provided type `T`.
 """
-function required_contracts(T::Assignable)
-    m = parentmodule(T)
-    c = [contracts(t) for t in traits(m, T)]  # returns array of set of contracts
-    return union(c...)
+function required_contracts(m::Module, T::Assignable)
+    c = [contracts(m, t) for t in traits(m, T)]  # returns array of set of contracts
+    return isempty(c) ? valtype(storage().interface_map)() : union(c...) 
 end
 
 """
@@ -134,13 +119,6 @@ macro implement(can_type, by, sig)
     # generate code
     expr = quote
         function $func_name end
-
-        # Keep copy of interface map in client module
-        global __binarytraits_interface_map
-        if !@isdefined(__binarytraits_interface_map)
-            __binarytraits_interface_map = BinaryTraits.make_interface_map()
-        end
-
         BinaryTraits.register($mod, $can_type, $func_name,
                               ($(func_arg_types...),), $kwtuple, $return_type)
     end
