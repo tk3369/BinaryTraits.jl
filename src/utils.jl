@@ -60,18 +60,18 @@ function display_expanded_code(expr::Expr)
     return nothing
 end
 
-# some standard methods which were introduced in v1.2
-if VERSION < v"1.2.0"
-    valtype(::Type{<:AbstractDict{K,V}}) where {K,V} = V
-    valtype(::T) where T<:AbstractDict = valtype(T)
-    Base.get!(f, d::IdDict, key) = haskey(d, key) ? d[key] : f()
+function define_const!(mod::Module, name::Symbol, val)
+    if !isdefined(mod, name)
+        mod.eval( :(const $name = $val) )
+    else
+        mod.eval(name)
+    end
 end
-
-define_const!(mod::Module, name::Symbol, val) = mod.eval( :(const $name = $val) )
-define_var!(mod::Module, name::Symbol, val) = mod.eval( :($name = $val) )
-
+# -----------------------------------------------------------------------------------------
 # Storage management
+# -----------------------------------------------------------------------------------------
 
+const LOCAL_STORAGE_NAME = :__binarytraits_storage
 const TRAITS_STORAGE = TraitsStorage() # the singleton global storage
 storage() = TRAITS_STORAGE
 
@@ -81,14 +81,11 @@ storage() = TRAITS_STORAGE
 Create a temporary variable with a `TraitsStorage` object in given module.
 """
 function make_local_storage(mod::Module)
-    if !isdefined(mod, :__binarytraits_storage)
-        mod.eval( :( const __binarytraits_storage = BinaryTraits.TraitsStorage()) )
-    end
-    mod.__binarytraits_storage
+    define_const!(mod, LOCAL_STORAGE_NAME, TraitsStorage())
 end
 
 function get_local_storage(mod::Module)
-    isdefined(mod, :__binarytraits_storage) ? mod.__binarytraits_storage : nothing
+    isdefined(mod, LOCAL_STORAGE_NAME) ? mod.__binarytraits_storage : nothing
 end
 
 """
@@ -106,12 +103,12 @@ function getvalues(mod::Module, sym::Symbol, key)
     tab = getproperty(storage(), sym)
     return haskey(tab, key) ? tab[key] : valtype(tab)()
 end
-get_traits_values(m::Module, key::Assignable) = getvalues(m, :traits_map, key)
+# get_traits_values(m::Module, key::Assignable) = getvalues(m, :traits_map, key)
 get_interface_values(m::Module, key::DataType) = getvalues(m, :interface_map, key)
 get_composite_values(m::Module, key::DataType) = getvalues(m, :composite_map, key)
 
 function get_traits_map(mod::Module)
-    lst = make_local_storage(mod)
+    lst = get_local_storage(mod)
     gst = storage()
     return lst === nothing ? gst.traits_map : merge(union, gst.traits_map, lst.traits_map)
 end
@@ -144,7 +141,7 @@ Afterwared the local storage is emty.
 """
 function move_to_global!(mod::Module)
     st = get_local_storage(mod)
-    if st !== nothing
+    if st !== nothing && !isempty(st)
         for sym in (:traits_map, :interface_map, :composite_map)
             dtab = getproperty(storage(), sym)
             stab = getproperty(st, sym)
@@ -163,8 +160,16 @@ end
 
 This function should be called like `inittraits(@__MODULE__)` inside the
 `__init__()' method of each module using `BinaryTraits`.
+Alternatively it can be called outside the module this way:
+`using Module; inittraits(Module)`, if `Module` missed to call it within its `::init__`.
 """
 function inittraits(mod::Module)
     move_to_global!(mod)
+end
+
+function Base.isempty(st::TraitsStorage)
+    isempty(st.traits_map) &&
+    isempty(st.interface_map) &&
+    isempty(st.composite_map)
 end
 
