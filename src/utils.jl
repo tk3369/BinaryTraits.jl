@@ -133,6 +133,8 @@ push_composite_map!(m::Module, a::DataType, val) = pushdict!(m, :composite_map, 
 push_or_union!(s::Set, val) = push!(s, val)
 push_or_union!(s::Set, val::Set) = union!(s, val)
 
+import Base.rehash!
+
 """
     move_to_global!(module)
 
@@ -141,6 +143,7 @@ Afterwared the local storage is emty.
 """
 function move_to_global!(mod::Module)
     st = get_local_storage(mod)
+    rehash!(st)
     if st !== nothing && !isempty(st)
         for sym in (:traits_map, :interface_map, :composite_map)
             dtab = getproperty(storage(), sym)
@@ -167,6 +170,12 @@ function inittraits(mod::Module)
     move_to_global!(mod)
 end
 
+function rehash!(st::TraitsStorage)
+    rehash!(st.traits_map)
+    rehash!(st.interface_map)
+    rehash!(st.composite_map)
+    return st
+end
 function Base.isempty(st::TraitsStorage)
     isempty(st.traits_map) &&
     isempty(st.interface_map) &&

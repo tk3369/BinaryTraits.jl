@@ -15,6 +15,5 @@ end
 if VERSION < v"1.2.0"
     valtype(::Type{<:AbstractDict{K,V}}) where {K,V} = V
     valtype(::T) where T<:AbstractDict = valtype(T)
-    Base.get!(f, d::IdDict, key) = haskey(d, key) ? d[key] : f()
 end
 
