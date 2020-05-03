@@ -86,20 +86,22 @@ struct SyntaxError <: Exception
     msg
 end
 
+const MyDict = VERSION < v"1.2.0" ? Dict : IdDict
+
 """
     TraitsMap
 
 Map a data type to the Can-type of its assigned traits.
 For example, `Dog => Set([CanSwim, CanRun])`.
 """
-const TraitsMap = Dict{Assignable,Set{DataType}}
+const TraitsMap = MyDict{Assignable,Set{DataType}}
 
 """
     InterfaceMap
 
 Map a Can-type to a set of interface contracts.  See [`Contract`](@ref).
 """
-const InterfaceMap = Dict{DataType,Set{Contract}}
+const InterfaceMap = MyDict{DataType,Set{Contract}}
 
 """
     CompositeTraitMap
@@ -107,4 +109,20 @@ const InterfaceMap = Dict{DataType,Set{Contract}}
 Maps a composite can-type to a set of its underlying can-types.
 e.g. `CanFlySwim => Set([CanFly, CanSwim])`.
 """
-const CompositeTraitMap = Dict{DataType,Set{DataType}}
+const CompositeTraitMap = MyDict{DataType,Set{DataType}}
+
+"""
+    TraitsStorage
+
+Type keeping all traits-related dynamic data.
+[`TraitsMap`](@ref)
+[`InterfaceMap`](@ref)
+[`CompositeTraitMap`](@ref)
+"""
+struct TraitsStorage
+    traits_map::TraitsMap
+    interface_map::InterfaceMap
+    composite_map::CompositeTraitMap
+    TraitsStorage() = new(TraitsMap(), InterfaceMap(), CompositeTraitMap())
+end
+

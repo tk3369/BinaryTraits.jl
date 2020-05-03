@@ -3,18 +3,6 @@ const DEFAULT_TRAIT_SUPERTYPE = Any
 
 # -----------------------------------------------------------------------------
 
-"Create a new composite trait map"
-make_composite_trait_map() = CompositeTraitMap()
-
-"Get a reference to the module's composite trait map."
-function get_composite_trait_map(m::Module)
-    isdefined(m, :__binarytraits_composite_trait_map) ||
-        error("Bug, no trait has been defined for module $m yet")
-    return m.__binarytraits_composite_trait_map
-end
-
-# -----------------------------------------------------------------------------
-
 """
     @trait <name> [as <category>] [prefix <positive>,<negative>] [with <trait1,trait2,...>]
 
@@ -59,9 +47,11 @@ macro trait(name::Symbol, args...)
     # can-type to the underlying's can-types.  It is needed for interface checks.
     composite_expr = if underlying_traits !== nothing
         traits_can_types = underlying_traits.args
-        :( __binarytraits_composite_trait_map[$this_can_type] = Set([$(traits_can_types...)]) )
+        quote 
+        BinaryTraits.push_composite_map!($mod, $this_can_type, Set([$(traits_can_types...)]))
+        end
     else
-        :()
+        nothing
     end
 
     prefixes = (pos, neg)
@@ -75,14 +65,7 @@ macro trait(name::Symbol, args...)
 
         BinaryTraits.istrait(::Type{$trait_type}) = true
 
-        # Remember composite can-trait mappings in client module
-        global __binarytraits_composite_trait_map
-        if !@isdefined(__binarytraits_composite_trait_map)
-            __binarytraits_composite_trait_map = BinaryTraits.make_composite_trait_map()
-        end
         $composite_expr
-
-        nothing
     end
     display_expanded_code(expr)
     return esc(expr)
