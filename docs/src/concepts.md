@@ -1,3 +1,3 @@
 ## Concepts
 
-![](../images/traits_overview.png)
+![](assets/traits_overview.png)
