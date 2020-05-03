@@ -4,6 +4,10 @@
 [![Travis Build Status](https://travis-ci.org/tk3369/BinaryTraits.jl.svg?branch=master)](https://travis-ci.org/tk3369/BinaryTraits.jl)
 [![codecov.io](http://codecov.io/github/tk3369/BinaryTraits.jl/coverage.svg?branch=master)](http://codecov.io/github/tk3369/BinaryTraits.jl?branch=master)
 
+*NOTE: This package is quite functional already but still experimental in the
+sense that more breaking changes are expected.  Follow the
+[issues list](https://github.com/tk3369/BinaryTraits.jl/issues)
+if you are interested in the ongoing progress.*
 
 BinaryTraits.jl focuses on usability - traits should be simple to understand and easy to use.
 For that reason, it is designed to be an *opinionated* library and follows certain conventions.
