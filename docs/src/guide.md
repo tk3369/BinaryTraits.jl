@@ -1,4 +1,4 @@
-## Traits
+## Defining traits
 
 ### The @trait macro
 
@@ -67,7 +67,7 @@ spank(::CanFlySwim, x) = "Flying high and diving deep"
 spank(::CannotFlySwim, x) = "Too Bad"
 ```
 
-### Assigning traits
+## Assigning traits to types
 
 Once you define your favorite traits, you may assign any data type to any traits.
 The syntax of the assignment is as follows:
@@ -80,7 +80,7 @@ You can assign a data type with 1 or more traits in a single statement:
 
 ```julia
 struct Crane end
-@assign Crane with Fly,Swim
+@assign Crane with CanFly,CanSwim
 ```
 
 When you assign traits to a data type, it will be equivalent to defining
@@ -91,7 +91,7 @@ flytrait(::Crane) = CanFly()
 swimtrait(::Crane) = CanSwim()
 ```
 
-## Interfaces
+## Specifying interfaces
 
 A useful feature of traits is to define formal interfaces.  Currently, Julia does not
 come with any facility to specify interface contracts.  The users are expected to
@@ -99,10 +99,10 @@ look up interface definitions from documentations and make sure that they implem
 those contracts per documentation.
 
 This package provides additional machinery for users to formally define interfaces.
-It also comes with a checker function for verifying the validity of data
+It also comes with a macro for verifying the validity of data
 type implementations.
 
-### Defining interfaces
+### Formal interface contracts
 
 Once you have defined a trait, you may define a set of interface contracts that a
 data type must implement in order to carry that trait.  These contracts are registered
@@ -134,7 +134,7 @@ The followings are all valid usages:
     an object to be the first argument.  It is excluded from the interface
     definition for convenience reasons.
 
-### Implementing interfaces
+### Implementing interface contracts
 
 A data type that is assigned to a trait should implement all interface contracts.
 From the previous section, we established three contracts for the `Fly` trait -
@@ -146,7 +146,7 @@ the `liftoff` contract as shown below:
 ```@example guide
 abstract type Animal end
 struct Bird <: Animal end
-@assign Bird with Fly
+@assign Bird with CanFly
 liftoff(bird::Bird) = "Hoo hoo!"
 nothing # hide
 ```
@@ -164,23 +164,23 @@ liftoff(::CannotFly, x) = "Hi ho!"
 nothing # hide
 ```
 
-### Verifying interfaces
+### Validating a type against its interfaces
 
 The reason for spending so much effort in specifying interface contracts is
 so that we have a high confidence about our code.  Julia is a dynamic system
 and so generally speaking we do not have any static type checking in place.
 BinaryTraits now gives you that capability.
 
-The `check` function can be used to verify whether your data type has fully
+The `@check` macro can be used to verify whether your data type has fully
 implemented its assigned traits and respective interface contracts.  The usage
-is embarrassingly simple.  You can just call the `check` function with the
+is embarrassingly simple.  You can just call the `@check` macro with the
 data type:
 
 ```@repl guide
-check(Bird)
+@check(Bird)
 ```
 
-The `check` function returns an `InterfaceReview` object, which gives you the
+The `@check` macro returns an `InterfaceReview` object, which gives you the
 validation result.  The warnings are generated so that it comes up in the log file.
 The following text is the display for the `InterfaceReview` object.  It is designed
 to clearly show you what has been implemented and what's not.
@@ -192,9 +192,31 @@ to clearly show you what has been implemented and what's not.
     contracts for `CanFlySwim`.
 
 !!! note
-    One way to utilize the `check` function is to put that in your module's `__init__` function
+    One way to utilize the `@check` macro is to put that in your module's `__init__` function
     so that it is verified before the package is used.  Another option is to do that in your
     test suite and so it will be run every single time.
+
+## Additional step for framework providers
+
+BinaryTraits is designed to allow one module to define traits and interfaces and
+have other modules implementing them.  For example, it should be possible for
+[Tables.jl](https://github.com/JuliaData/Tables.jl) to define traits for
+row tables and column tables and required interface functions, and have
+all of its [integrations](https://github.com/JuliaData/Tables.jl/blob/master/INTEGRATIONS.md)
+participate in the same traits system.
+
+In order to facilitate interaction between modules, BinaryTraits requires the
+framework provider (e.g. Tables.jl in the example above) to add the following
+code in its `__init__` function:
+
+```julia
+function __init__()
+    inittraits(@__MODULE__)
+end
+```
+
+This additional steps allows all packages that utilize BinaryTraits to register
+their traits and interface contracts at a central location.
 
 ## Summary
 

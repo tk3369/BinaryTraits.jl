@@ -21,7 +21,7 @@ function register(m::Module,
 end
 
 """
-    contracts(module, can_type::DataType)
+    contracts(module::Module, can_type::DataType)
 
 Returns a set of [`Contracts`](@ref) that are required to be implemented
 for objects that exihibits the specific `can_type` trait.
@@ -40,7 +40,7 @@ end
 
 """
     @check(T::Assignable)
-    check(module, T::Assignable)
+    check(module::Module, T::Assignable)
 
 Check if the data type `T` has fully implemented all trait functions that it was
 previously assigned. See also: [`@assign`](@ref).
@@ -72,21 +72,21 @@ function check(m::Module, T::Assignable)
 end
 
 """
-    required_contracts(module, T::Assignable)
+    required_contracts(module::Module, T::Assignable)
 
 Return a set of contracts that is required to be implemented for
 the provided type `T`.
 """
 function required_contracts(m::Module, T::Assignable)
     c = [contracts(m, t) for t in traits(m, T)]  # returns array of set of contracts
-    return isempty(c) ? valtype(storage().interface_map)() : union(c...) 
+    return isempty(c) ? valtype(storage().interface_map)() : union(c...)
 end
 
 """
     @implement <CanType> by <FunctionSignature>
 
 Register function signature for the specified `CanType` of a trait.
-You can use the [`check`](@ref) function to verify your implementation
+You can use the [`@check`](@ref) function to verify your implementation
 after these interface contracts are registered.  The function
 signature only needs to specify required arguments other than
 the object itself.  Also, return type is optional and in that case

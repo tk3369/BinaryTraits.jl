@@ -76,7 +76,7 @@ const TRAITS_STORAGE = TraitsStorage() # the singleton global storage
 storage() = TRAITS_STORAGE
 
 """
-    make_local_storage(module)
+    make_local_storage(module::Module)
 
 Create a temporary variable with a `TraitsStorage` object in given module.
 """
@@ -89,10 +89,11 @@ function get_local_storage(mod::Module)
 end
 
 """
-    getvalues(module, :table, key)
+    getvalues(module::Module, sym::Symbol, key)
 
-Get the set of values associated with the `key` in field `table`.
-Try first local (module-) table, if key not found use global table
+Get the set of values associated with the `key` in the dictionary
+from the storage as identified by `sym` (e.g. `:interface_map`).
+Try first local (module-) table, if key not found use global table.
 """
 function getvalues(mod::Module, sym::Symbol, key)
     st = get_local_storage(mod)
@@ -114,9 +115,10 @@ function get_traits_map(mod::Module)
 end
 
 """
-    pushdict!(module, :table, key, value)
+    pushdict!(module::Module, sym::Symbol, key, value)
 
-Insert value into set associated with `key` in the local (module-) `table`.
+Insert value into set associated with `key` in the dictionary as identified
+by `sym` (e.g. `:interface_map`) from the local storage.
 Create set if not pre-existent.
 """
 function pushdict!(mod::Module, sym::Symbol, key, val)
@@ -136,10 +138,10 @@ push_or_union!(s::Set, val::Set) = union!(s, val)
 import Base.rehash!
 
 """
-    move_to_global!(module)
+    move_to_global!(module::Module)
 
 Move all sets collected in local storage to global storage.
-Afterwared the local storage is emty.
+Afterwareds, the local storage is empty.
 """
 function move_to_global!(mod::Module)
     st = get_local_storage(mod)
@@ -159,12 +161,17 @@ function move_to_global!(mod::Module)
 end
 
 """
-    inittraits(module)
+    inittraits(module::Module)
 
 This function should be called like `inittraits(@__MODULE__)` inside the
 `__init__()' method of each module using `BinaryTraits`.
+
 Alternatively it can be called outside the module this way:
-`using Module; inittraits(Module)`, if `Module` missed to call it within its `::init__`.
+`using Module; inittraits(Module)`, if `Module` missed to call it
+within its `__init__` function.
+
+This is required only if the traits/interfaces are expected to be shared
+across modules.
 """
 function inittraits(mod::Module)
     move_to_global!(mod)

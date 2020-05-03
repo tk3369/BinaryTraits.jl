@@ -29,17 +29,17 @@ const IntVarArg = Vararg{Int, N} where N
 const Array1DInt = Array{Int,1}
 
 @assign Array1DInt with HasDimension
-check(Array1DInt)
+@check(Array1DInt)
 #=
-julia> check(Array1DInt)
+julia> @check(Array1DInt)
 ✅ Array{Int64,1} has implemented:
 1. DimensionTrait: HasDimension ⇢ size(::<Type>)::Tuple
 =#
 
 @assign Array1DInt with HasLinearIndexing
-check(Array1DInt)
+@check(Array1DInt)
 #=
-julia> check(Array1DInt)
+julia> @check(Array1DInt)
 ✅ Array{Int64,1} has implemented:
 1. LinearIndexingTrait: HasLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
 2. LinearIndexingTrait: HasLinearIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Int64)::Any
@@ -49,9 +49,9 @@ julia> check(Array1DInt)
 # 1D array is a specialized version of CartesianIndexing.
 # Let's verify.
 @assign Array1DInt with HasCartesianIndexing
-check(Array1DInt)
+@check(Array1DInt)
 #=
-julia> check(Array1DInt)
+julia> @check(Array1DInt)
 ✅ Array{Int64,1} has implemented:
 1. LinearIndexingTrait: HasLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
 2. LinearIndexingTrait: HasLinearIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Int64)::Any
@@ -72,9 +72,9 @@ Base.size(S::SquaresVector) = (S.count,)
 Base.getindex(S::SquaresVector, i::Int) = i*i
 
 @assign SquaresVector with HasDimension,HasLinearIndexing
-check(SquaresVector)
+@check(SquaresVector)
 #=
-julia> check(SquaresVector)
+julia> @check(SquaresVector)
 ✅ SquaresVector has implemented:
 1. LinearIndexingTrait: HasLinearIndexing ⇢ getindex(::<Type>, ::Int64)::Any
 2. LinearIndexingTrait: HasLinearIndexing ⇢ setindex!(::<Type>, ::Union{}, ::Int64)::Any

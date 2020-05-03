@@ -17,9 +17,9 @@ struct Crane end
 @assign Crane with CanFly,CanSwim
 
 # Check compliance.
-check(Crane)
+@check(Crane)
 #=
-julia> check(Crane)
+julia> @check(Crane)
 ┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ speed(::Crane)::Float64
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
 ┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ liftoff(::Crane)::Any
@@ -40,9 +40,9 @@ struct Swan end
 @assign Swan with CanFlySwim
 
 # Check compliance. It should drill down to figure out required interface contracts.
-check(Swan)
+@check(Swan)
 #=
-julia> check(Swan)
+julia> @check(Swan)
 ┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Swan, ::Float64, ::Float64)::Any
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:77
 ┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ speed(::Swan)::Float64

@@ -29,12 +29,12 @@ end
 
 
 """
-    @assign <T> with <Trait1, Trait2, ...>
+    @assign <T> with <CanTrait1, CanTrait2, ...>
 
 Assign traits to the data type `T`.  For example:
 
 ```julia
-@assign Duck with Fly,Swim
+@assign Duck with CanFly,CanSwim
 ```
 
 is translated to something like:
@@ -48,7 +48,7 @@ where `x` is the name of the trait `X` in all lowercase, and `T` is the type
 being assigned with the trait `X`.
 """
 macro assign(T::Union{Expr,Symbol}, with::Symbol, traits::Union{Expr,Symbol})
-    usage = "Invalid @assign usage.  Try something like: @assign Duck with Fly,Swim"
+    usage = "Invalid usage: try something like: @assign Duck with CanFly,CanSwim"
     with === :with || throw(SyntaxError(usage))
     mod = __module__
 
