@@ -24,8 +24,8 @@ Consider the following animal types. We can assign them traits quite easily:
 ```@example ex
 struct Dog end
 struct Duck end
-@assign Dog with Swim
-@assign Duck with Swim,Fly
+@assign Dog with CanSwim
+@assign Duck with CanSwim,CanFly
 nothing # hide
 ```
 
@@ -56,11 +56,11 @@ implement a `fly` method.  We can define that interface as follows:
 @implement CanFly by fly(direction::Float64, altitude::Float64)
 ```
 
-Then, to make sure that our implementation is correct, we can use the `check`
+Then, to make sure that our implementation is correct, we can use the `@check`
 macro as shown below:
 
 ```julia
-julia> check(Duck)
+julia> @check(Duck)
 ┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Duck, ::Float64, ::Float64)::Nothing
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:170
 ❌ Duck is missing these implementations:
@@ -72,7 +72,7 @@ Now, let's implement the method and check again:
 ```julia
 julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
 
-julia> check(Duck)
+julia> @check(Duck)
 ✅ Duck has implemented:
 1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Any
 ```

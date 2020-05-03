@@ -114,10 +114,12 @@ const CompositeTraitMap = MyDict{DataType,Set{DataType}}
 """
     TraitsStorage
 
-Type keeping all traits-related dynamic data.
-[`TraitsMap`](@ref)
-[`InterfaceMap`](@ref)
-[`CompositeTraitMap`](@ref)
+Keeps all traits-related dynamic data.
+
+# Fields
+- `traits_map`: see [`TraitsMap`](@ref)
+- `interface_map`: see [`InterfaceMap`](@ref)
+- `composite_map`: see [`CompositeTraitMap`](@ref)
 """
 struct TraitsStorage
     traits_map::TraitsMap

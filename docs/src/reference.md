@@ -1,4 +1,5 @@
-# Reference
+This page contains the most important macros, functions, and types
+that you should be aware of.
 
 ## Macros
 
@@ -6,14 +7,15 @@
 @trait
 @assign
 @implement
+@check
 ```
 ## Functions
 
 ```@docs
 traits
 istrait
-check
 required_contracts
+inittraits
 ```
 
 ## Types

@@ -19,9 +19,9 @@ Base.iterate(S::Squares, state=1) = state > S.count ? nothing : (state*state, st
 
 # Let's assign the Squares type to Iterable
 @assign Squares with IsIterable
-check(Squares)
+@check(Squares)
 #=
-julia> check(Squares)
+julia> @check(Squares)
 ✅ Squares has implemented:
 1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
 2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
@@ -48,7 +48,7 @@ function Base.getindex(S::Squares, i)
 end
 
 @assign Squares with IsIndexable
-check(Squares)
+@check(Squares)
 #=
 ✅ Squares has implemented:
 1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
@@ -58,9 +58,9 @@ check(Squares)
 
 # We want to have the traits for indexing from beginning and at the end
 @assign Squares with IsIndexableFromBeginning, IsIndexableAtTheEnd
-check(Squares)
+@check(Squares)
 #=
-julia> check(Squares)
+julia> @check(Squares)
 ┌ Warning: Missing implementation: IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(::Squares)::Any
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
 ┌ Warning: Missing implementation: IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::Squares)::Any
@@ -77,9 +77,9 @@ julia> check(Squares)
 # Let's implement them now.
 Base.firstindex(S::Squares) = 1
 Base.lastindex(S::Squares) = length(S)
-check(Squares)
+@check(Squares)
 #=
-julia> check(Squares)
+julia> @check(Squares)
 ✅ Squares has implemented:
 1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
 2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any

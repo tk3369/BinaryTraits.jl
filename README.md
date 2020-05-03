@@ -34,7 +34,7 @@ fly(::Bird, destination::Location, speed::Float64) = "Wohoo! Arrived! 🐦"
 @assign Bird with CanFly
 
 # Verify that your implementation is correct
-check(Bird)
+@check(Bird)
 ```
 
 ## Main Features
