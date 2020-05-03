@@ -10,41 +10,36 @@ Every motivation starts with an example.  In this page, we cover the following t
 
 Suppose that we are modeling the ability of animals.  So we can define traits as follows:
 
-```@example ex
+```julia
 using BinaryTraits
-
 abstract type Ability end
 @trait Swim as Ability
 @trait Fly as Ability
-nothing # hide
 ```
 
 Consider the following animal types. We can assign them traits quite easily:
 
-```@example ex
+```julia
 struct Dog end
 struct Duck end
 @assign Dog with CanSwim
 @assign Duck with CanSwim,CanFly
-nothing # hide
 ```
 
 Next, how do you dispatch by traits?  Just follow the Holy Trait pattern:
 
-```@example ex
+```julia
 tickle(x) = tickle(flytrait(x), swimtrait(x), x)
 tickle(::CanFly, ::CanSwim, x) = "Flying high and diving deep"
 tickle(::CanFly, ::CannotSwim, x) = "Flying away"
 tickle(::Ability, ::Ability, x) = "Stuck laughing"
-nothing # hide
 ```
 
 *Voila!*
 
-```@repl ex
+```julia
 tickle(Dog())
 tickle(Duck())
-nothing # hide
 ```
 
 ## Working with interfaces

@@ -22,8 +22,7 @@ If the clause is missing, the super-type is defaulted to `Any`.
 This may be useful when you want to group a set of traits under the
 same hierarchy.  For example:
 
-```@example guide
-using BinaryTraits  # hide
+```julia
 abstract type Ability end
 @trait Fly as Ability
 @trait Swim as Ability
@@ -53,8 +52,8 @@ This should make your code a lot more readable.
 Sometimes we really want to compose traits and use a single one directly
 for dispatch.  In that case, we can just use the with-clause like this:
 
-```@example guide
-@trait FlySwim with Fly,Swim
+```julia
+@trait FlySwim with CanFly,CanSwim
 ```
 
 This above syntax would define a new trait where it assumes the
@@ -118,7 +117,7 @@ etc.  The `<FunctionSignature>` is basically a standard function signature.
 
 The followings are all valid usages:
 
-```@example guide
+```julia
 @implement CanFly by liftoff()
 @implement CanFly by fly(direction::Float64, altitude::Float64)
 @implement CanFly by speed()::Float64
@@ -143,12 +142,11 @@ From the previous section, we established three contracts for the `Fly` trait -
 So let's say we are defining a `Bird` type that exhibits `Fly` trait, we implement
 the `liftoff` contract as shown below:
 
-```@example guide
+```julia
 abstract type Animal end
 struct Bird <: Animal end
 @assign Bird with CanFly
 liftoff(bird::Bird) = "Hoo hoo!"
-nothing # hide
 ```
 
 Note that I must include an object to be the first argument of the function.
@@ -157,11 +155,10 @@ In this case, I have chosen to pass a `Bird` object.
 However, it would be more practical when you have multiple types that satisfy
 the same trait.  So, Holy Trait comes to rescue:
 
-```@example guide
+```julia
 liftoff(x::Animal) = liftoff(flytrait(x), x)
 liftoff(::CanFly, x) = "Hi ho!"
 liftoff(::CannotFly, x) = "Hi ho!"
-nothing # hide
 ```
 
 ### Validating a type against its interfaces
@@ -176,8 +173,9 @@ implemented its assigned traits and respective interface contracts.  The usage
 is embarrassingly simple.  You can just call the `@check` macro with the
 data type:
 
-```@repl guide
-@check(Bird)
+```julia
+julia> @check(Bird)
+✅ Bird has no interface contract requirements.
 ```
 
 The `@check` macro returns an `InterfaceReview` object, which gives you the
