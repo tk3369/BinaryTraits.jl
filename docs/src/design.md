@@ -16,7 +16,7 @@ flytrait(::Duck) = CanFly()
 swimtrait(::Duck) = CanSwim()
 ```
 
-Making composite traits is slightly more interesting.  It creates a new trait by combining multiple traits together.  Having a composite trait is defined as one that exhibits *all* of the underlying traits.  Hence, `@trait FlySwim as Ability with Fly,Swim` would be translated to the following:
+Making composite traits is slightly more interesting.  It creates a new trait by combining multiple traits together.  Having a composite trait is defined as one that exhibits *all* of the underlying traits.  Hence, `@trait FlySwim as Ability with CanFly,CanSwim` would be translated to the following:
 
 ```julia
 abstract type FlySwimTrait <: Ability end
