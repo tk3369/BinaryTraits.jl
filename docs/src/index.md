@@ -1,3 +1,5 @@
+BinaryTraits.jl project is located at https://github.com/tk3369/BinaryTraits.jl.
+
 Every motivation starts with an example.  In this page, we cover the following tasks:
 
 1. Defining traits
