@@ -28,8 +28,9 @@ struct Contract{T <: DataType, F <: Function}
 end
 
 function Base.show(io::IO, c::Contract)
-    typ = Symbol(TYPE_PLACEHOLDER)
-    args = string("(", join([typ, c.args...], ", ::"))
+    # prefix the can-type with a different symbol because it's not subtype relation
+    args = [x == c.can_type ? "🚀$x" : "::$x" for x in c.args]
+    args = string("(", join(args, ", "))
     if length(c.kwargs) > 0
         args = string(args, "; ", join(c.kwargs, ", "))
     end

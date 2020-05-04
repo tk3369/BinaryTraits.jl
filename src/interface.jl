@@ -1,6 +1,3 @@
-# used for display purpose only
-const TYPE_PLACEHOLDER = "::<Type>"
-
 """
     register(m::Module, can_type::DataType, func::Function, args::NTuple{N,DataType},
              kwargs::NTuple{N,Symbol}, ret::DataType) where N
@@ -53,22 +50,32 @@ function check(m::Module, T::Assignable)
     all_good = true
     implemented_contracts = Contract[]
     missing_contracts = Contract[]
-    for c in required_contracts(m, T)
-        tuple_type = Tuple{T, c.args...}
-        method_exists = has_method(c.func, tuple_type, c.kwargs)
-        sig = replace("$c", TYPE_PLACEHOLDER => "::$T")
+    for contract in required_contracts(m, T)
+        tuple_type = make_tuple_type(T, contract)
+        method_exists = has_method(contract.func, tuple_type, contract.kwargs)
         if method_exists
-            push!(implemented_contracts, c)
+            push!(implemented_contracts, contract)
         else
-            @warn "Missing implementation: $sig"
+            @warn "Missing implementation" contract
             all_good = false
-            push!(missing_contracts, c)
+            push!(missing_contracts, contract)
         end
     end
     return InterfaceReview(data_type = T,
                            result = all_good,
                            implemented = implemented_contracts,
                            misses = missing_contracts)
+end
+
+"""
+    make_tuple_type(T::Assignable, c::Contract)
+
+Make a tuple type such that the placeholder (can-type) is replaced
+with the type `T` that is being checked.
+"""
+function make_tuple_type(T::Assignable, c::Contract)
+    args = [t == c.can_type ? T : t for t in c.args]
+    return Tuple{args...}
 end
 
 """
@@ -157,7 +164,7 @@ function parse_implement(can_type, by, sig)
     # further arguments after the keyword argument list
     for (idx, x) in enumerate(sig.args[firstarg:end])  # x must be Expr of 1 or 2 symbols
         push!(func_arg_names, extract_name(x, Symbol("x$idx")))
-        push!(func_arg_types, extract_type(x, :(Base.Bottom)))
+        push!(func_arg_types, extract_type(x, can_type, :(Base.Bottom)))
     end
 
     return (func_name, func_arg_names, func_arg_types, func_kwarg_names, return_type)
@@ -181,9 +188,13 @@ function extract_name(x::Expr, default)
     end
 end
 
-# if only an argument name, deliver the default type
-extract_type(::Symbol, default) = default
-function extract_type(x::Expr, default)
+# If the symbol is an underscore, replace with the can-type.
+# Otherwise, just return the default type.
+function extract_type(s::Symbol, can_type, default)
+    return s === :_ ? can_type : default
+end
+
+function extract_type(x::Expr, can_type, default)
     n = length(x.args)
     if x.head == :(::)
         # form: '<name> :: <type-spec>' or ':: <type-spec>'
@@ -192,7 +203,7 @@ function extract_type(x::Expr, default)
     elseif n >= 1 && x.head == :kw
         # form: '<something> = <rest>'
         # we assume <something> has one of the previous forms and ignore rest
-        extract_type(x.args[1], default)
+        extract_type(x.args[1], can_type, default)
     else
         throw(SyntaxError("@implement")) # will never be called, because extract_name throws
     end

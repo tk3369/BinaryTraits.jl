@@ -126,7 +126,7 @@ module SyntaxErrors
 
             @test @testme @assign Dog with 1           # 1 is not a symbol
             # invalid argument
-            @test @testme @implement CanCreep by creep2([]) # invalid argument
+            @test @testme @implement CanCreep by creep2(_, []) # invalid argument
         end
     end
 end
@@ -145,18 +145,18 @@ module Interfaces
     bird_check = @check(Bird)
     @test bird_check.result == true # everything ok without interface contracts
 
-    @implement CanFly by liftoff()
-    @implement CanFly by speed(resistence::Float64)::Float64
-    @implement CanFly by flyto(::Float64, ::Float64)::String  # fly to (x,y)
+    @implement CanFly by liftoff(_)
+    @implement CanFly by speed(_, resistence::Float64)::Float64
+    @implement CanFly by flyto(::Float64, ::Float64, _)::String  # fly to (x,y)
 
     # Pretty trait requires a single contract
     @trait Pretty prefix Is,Not
-    @implement IsPretty by look_at_the_mirror_daily()::Bool
+    @implement IsPretty by look_at_the_mirror_daily(_)::Bool
 
     # Bird satisfies all contracts from FlyTrait by concrete type
     liftoff(::Bird) = "hi ho!"
     speed(::Bird, resistence::Float64) = 100 - resistence
-    flyto(::Bird, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
+    flyto(x::Float64, y::Float64, ::Bird) = "Arrvied at ($x, $y)"
 
     # Duck satisfies partial contracts from FlyTrait by concrete type
     struct Duck end
@@ -172,7 +172,7 @@ module Interfaces
     @assign Flamingo with CanFly, IsPretty  # composite trait
     liftoff(::Flamingo) = "wee!"
     speed(::Flamingo, resistence::Float64) = 150 - resistence
-    flyto(::Flamingo, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
+    flyto(x::Float64, y::Float64, ::Flamingo) = "Arrvied at ($x, $y)"
     look_at_the_mirror_daily(::Flamingo) = true
 
     # Test composite traits - total underlying 4 contracts required for this!
@@ -182,23 +182,23 @@ module Interfaces
     struct Crane end
     @assign Crane with IsFlyPretty
     speed(::Crane, resistence::Float64) = 150 - resistence
-    flyto(::Crane, x::Float64, y::Float64) = "Arrvied at ($x, $y)"
+    flyto(x::Float64, y::Float64, ::Crane) = "Arrvied at ($x, $y)"
     look_at_the_mirror_daily(::Crane) = true
 
     struct Penguin end
     @trait Dive
     @assign Penguin with CanDive
-    @implement CanDive by dive1(::Integer)           # no argument name
-    @implement CanDive by dive2(::Vector{<:Integer}) # parameterized type
+    @implement CanDive by dive1(_, ::Integer)           # no argument name
+    @implement CanDive by dive2(_, ::Vector{<:Integer}) # parameterized type
     if SUPPORT_KWARGS
-        @implement CanDive by dive31(x::Real;)            # keyword arguments
-        @implement CanDive by dive32(x::Real; kw::Real)   # keyword arguments
-        @implement CanDive by dive33(y; kw1::Real, kw2)   # keyword arguments
-        @implement CanDive by dive34(x;kw1)
+        @implement CanDive by dive31(_, x::Real;)            # keyword arguments
+        @implement CanDive by dive32(_, x::Real; kw::Real)   # keyword arguments
+        @implement CanDive by dive33(_, y; kw1::Real, kw2)   # keyword arguments
+        @implement CanDive by dive34(_, x; kw1)
     end
-    @implement CanDive by dive4(::Base.Bottom)
-    @implement CanDive by dive5(x)
-    @implement CanDive by dive6(::Number)
+    @implement CanDive by dive4(_, ::Base.Bottom)
+    @implement CanDive by dive5(_, x)
+    @implement CanDive by dive6(_, ::Number)
 
     dive1(::Penguin, ::Real) = 1                # Real >: Integer
     dive2(::Penguin, ::Vector) = 2              # Vector >: Vector{<:Integer}
@@ -215,7 +215,7 @@ module Interfaces
     struct Rabbit <: Animal end
     @trait Eat
     @assign Animal with CanEat
-    @implement CanEat by eat()
+    @implement CanEat by eat(_)
     eat(::Animal) = 1
 
     # no contract requirements (code coverage)
@@ -223,7 +223,7 @@ module Interfaces
 
     # weird argument types in contract specs
     @trait Creep
-    @implement CanCreep by creep1(a::Int=5) # argument assignment
+    @implement CanCreep by creep1(_, a::Int=5) # argument assignment
 
     struct Snake end
     @assign Snake with CanCreep
@@ -304,7 +304,7 @@ module Interfaces
             @test check_snake.implemented |> length == 1
 
             # code coverage
-            @test_throws SyntaxError extract_type(:([]), nothing)
+            @test_throws SyntaxError extract_type(:([]), :(CanFly), nothing)
 
         end
     end
@@ -344,7 +344,7 @@ module CrossModule
     module X
         using BinaryTraits
         @trait RowTable prefix Is,Not
-        @implement IsRowTable by row(::Integer)
+        @implement IsRowTable by row(_, ::Integer)
         __init__() = inittraits(@__MODULE__)
     end
 
@@ -363,10 +363,9 @@ module CrossModule
     function test()
         @testset "cross-module implementation" begin
             r = @check(Y.AwesomeTable)
-            @test r.implemented |> length == 1    
+            @test r.implemented |> length == 1
         end
     end
-
 end
 
 @testset "BinaryTraits Tests" begin
