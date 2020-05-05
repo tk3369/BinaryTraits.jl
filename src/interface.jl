@@ -167,6 +167,11 @@ function parse_implement(can_type, by, sig)
         push!(func_arg_types, extract_type(x, can_type, :(Base.Bottom)))
     end
 
+    # Check that at least one of the arguments is the can-type
+    if findfirst(x -> x === can_type, func_arg_types) === nothing
+        throw(SyntaxError("The function signature must have at least 1 underscore."))
+    end
+
     return (func_name, func_arg_names, func_arg_types, func_kwarg_names, return_type)
 end
 
