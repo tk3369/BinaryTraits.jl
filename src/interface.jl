@@ -101,7 +101,7 @@ it will be ignored by the interface checker.
 
 For examples:
 ```julia
-@implement CanFly by fly(direction::Direction, speed::Float64)
+@implement CanFly by fly(_, direction::Direction, speed::Float64)
 @implement CanFly by has_wings()::Bool
 ```
 

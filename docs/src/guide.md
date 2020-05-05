@@ -72,18 +72,17 @@ Once you define your favorite traits, you may assign any data type to any traits
 The syntax of the assignment is as follows:
 
 ```julia
-@assign <DataType> with <Trait1>,<Trait2>,...
+@assign <DataType> with <CanTraitType1>,<CanTraitType2>,...
 ```
 
-You can assign a data type with 1 or more traits in a single statement:
+You can assign a data type with 1 or more can-trait types in a single statement:
 
 ```julia
 struct Crane end
 @assign Crane with CanFly,CanSwim
 ```
 
-When you assign traits to a data type, it will be equivalent to defining
-these functions:
+Doing that is pretty much equivalent to defining these functions:
 
 ```julia
 flytrait(::Crane) = CanFly()
@@ -123,13 +122,26 @@ The followings are all valid usages:
 @implement CanFly by speed(_)::Float64
 ```
 
+When return type is not specified, it is default to `Any`.
+Return type is currently not validated so it could be used here
+just for documentation purpose.
+
 The underscore `_` is a special syntax where you can indicate which positional
 argument you want to pass an object to the function.  The object is expected
 to have a type that is assigned to the Fly trait.
 
-When return type is not specified, it is default to `Any`.
-Return type is currently not validated so it could be used here
-just for documentation purpose.
+!!! note
+    The underscore may be placed at any argument position although it is
+    quite common to leave it as the first argument.
+
+!!! note
+    If you have multiple underscores, then the semantic is such that they
+    are all of the same type.  For example, two ducks may exhibits a
+    `Playful` trait and a `play(_, _)` interface expects an implementation
+    of `play(::Duck, ::Duck)`.
+
+It is also possible to use the negative part of the trait e.g. `CannotFly`
+for interface specification.
 
 ### Implementing interface contracts
 
@@ -194,7 +206,7 @@ to clearly show you what has been implemented and what's not.
     so that it is verified before the package is used.  Another option is to do that in your
     test suite and so it will be run every single time.
 
-## Additional step for framework providers
+## Notes for framework providers
 
 BinaryTraits is designed to allow one module to define traits and interfaces and
 have other modules implementing them.  For example, it should be possible for
@@ -220,4 +232,5 @@ their traits and interface contracts at a central location.
 
 The ability to design software with traits and interfaces and the ability to verify
 software for conformance to established interface contracts are highly desirable for
-professional software development projects.
+professional software development projects. BinaryTraits is designed to fill the
+language gap as related to the lack of a formal traits and interface system.
