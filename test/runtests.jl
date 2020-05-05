@@ -125,8 +125,9 @@ module SyntaxErrors
             @test @testme @trait Fly with Eat,Drink,1  # 1 is not a symbol
 
             @test @testme @assign Dog with 1           # 1 is not a symbol
-            # invalid argument
+
             @test @testme @implement CanCreep by creep2(_, []) # invalid argument
+            @test @testme @implement CanCreep by creep3()      # no underscore
         end
     end
 end
@@ -229,6 +230,15 @@ module Interfaces
     @assign Snake with CanCreep
     creep1(::Snake, ::Integer) = 1
 
+    @trait PlayNice
+    @implement CanPlayNice by play(_,_)
+    struct Dog end
+    struct Cat end
+    play(::Dog, ::Dog) = 1
+    play(::Cat, ::Dog) = 2
+    @assign Dog with CanPlayNice
+    @assign Cat with CanPlayNice
+
     function test()
         @testset "Interface validation" begin
 
@@ -302,6 +312,12 @@ module Interfaces
             check_snake = @check(Snake)
             @test check_snake.result
             @test check_snake.implemented |> length == 1
+
+            # Multiple underscores in the contract
+            check_dog = @check(Dog)
+            check_cat = @check(Cat)
+            @test check_dog.result === true    # Dog plays nice with Dog
+            @test check_cat.result === false   # Cat does not play nice with Cat
 
             # code coverage
             @test_throws SyntaxError extract_type(:([]), :(CanFly), nothing)
