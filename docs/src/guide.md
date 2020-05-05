@@ -118,20 +118,18 @@ etc.  The `<FunctionSignature>` is basically a standard function signature.
 The followings are all valid usages:
 
 ```julia
-@implement CanFly by liftoff()
-@implement CanFly by fly(direction::Float64, altitude::Float64)
-@implement CanFly by speed()::Float64
+@implement CanFly by liftoff(_)
+@implement CanFly by fly(_, direction::Float64, altitude::Float64)
+@implement CanFly by speed(_)::Float64
 ```
 
-!!! note
-    When return type is not specified, it is default to `Any`.
-    Return type is currently not validated so it could be used here
-    just for documentation purpose.
+The underscore `_` is a special syntax where you can indicate which positional
+argument you want to pass an object to the function.  The object is expected
+to have a type that is assigned to the Fly trait.
 
-!!! note
-    As you will see below, the functions need to be defined with the
-    an object to be the first argument.  It is excluded from the interface
-    definition for convenience reasons.
+When return type is not specified, it is default to `Any`.
+Return type is currently not validated so it could be used here
+just for documentation purpose.
 
 ### Implementing interface contracts
 
@@ -139,21 +137,23 @@ A data type that is assigned to a trait should implement all interface contracts
 From the previous section, we established three contracts for the `Fly` trait -
 `liftoff`, `fly`, and `speed`. To satisfy those contracts, we must implement those functions.
 
-So let's say we are defining a `Bird` type that exhibits `Fly` trait, we implement
-the `liftoff` contract as shown below:
+For example, let's say we are defining a `Bird` type that exhibits `Fly` trait,
+we can implement the following contracts:
 
 ```julia
 abstract type Animal end
 struct Bird <: Animal end
 @assign Bird with CanFly
+
+# implmementation of CanFly contracts
 liftoff(bird::Bird) = "Hoo hoo!"
+fly(bird::Bird, direction::Float64, altitude::Float64) = "Getting there!"
+speed(bird::Bird) = 10.0
 ```
 
-Note that I must include an object to be the first argument of the function.
-In this case, I have chosen to pass a `Bird` object.
-
-However, it would be more practical when you have multiple types that satisfy
-the same trait.  So, Holy Trait comes to rescue:
+Here, we implement the contracts directly with the specific concrete type.
+What if you have multiple types that satisfy the same trait.
+Holy Trait comes to rescue:
 
 ```julia
 liftoff(x::Animal) = liftoff(flytrait(x), x)
@@ -180,7 +180,7 @@ julia> @check(Bird)
 
 The `@check` macro returns an `InterfaceReview` object, which gives you the
 validation result.  The warnings are generated so that it comes up in the log file.
-The following text is the display for the `InterfaceReview` object.  It is designed
+The string representation of the `InterfaceReview` object is designed
 to clearly show you what has been implemented and what's not.
 
 !!! note
