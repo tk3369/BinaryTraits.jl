@@ -41,8 +41,11 @@ tickle(::Ability, ::Ability, x) = "Stuck laughing"
 *Voila!*
 
 ```julia
-tickle(Dog())
-tickle(Duck())
+julia> tickle(Dog())
+"Stuck laughing"
+
+julia> tickle(Duck())
+"Flying high and diving deep"
 ```
 
 ## Working with interfaces
