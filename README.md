@@ -19,7 +19,7 @@ to use.
 changes.  Please follow the
 [issues list](https://github.com/tk3369/BinaryTraits.jl/issues)
 if you would like to contribute to the project or have a stake in
-the design.*
+the design.
 
 ## Motivation
 
