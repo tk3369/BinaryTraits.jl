@@ -8,9 +8,9 @@ abstract type Ability end
 @trait Swim as Ability
 
 # Define interface contracts for the type.
-@implement CanFly by liftoff()
-@implement CanFly by fly(direction::Float64, altitude::Float64)
-@implement CanFly by speed()::Float64
+@implement CanFly by liftoff(_)
+@implement CanFly by fly(_, direction::Float64, altitude::Float64)
+@implement CanFly by speed(_)::Float64
 
 # Define a data type and assign it traits.
 struct Crane end
@@ -20,16 +20,19 @@ struct Crane end
 @check(Crane)
 #=
 julia> @check(Crane)
-┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ speed(::Crane)::Float64
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
-┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ liftoff(::Crane)::Any
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
-┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Crane, ::Float64, ::Float64)::Any
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
+┌ Warning: Missing implementation
+│   contract = FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
+┌ Warning: Missing implementation
+│   contract = FlyTrait: CanFly ⇢ speed(🔹)::Float64
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
+┌ Warning: Missing implementation
+│   contract = FlyTrait: CanFly ⇢ liftoff(🔹)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
 ❌ Crane is missing these implementations:
-1. FlyTrait: CanFly ⇢ speed(::<Type>)::Float64
-2. FlyTrait: CanFly ⇢ liftoff(::<Type>)::Any
-3. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Any
+1. FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
+2. FlyTrait: CanFly ⇢ speed(🔹)::Float64
+3. FlyTrait: CanFly ⇢ liftoff(🔹)::Any
 =#
 
 # What about composite traits?
@@ -43,14 +46,17 @@ struct Swan end
 @check(Swan)
 #=
 julia> @check(Swan)
-┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Swan, ::Float64, ::Float64)::Any
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:77
-┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ speed(::Swan)::Float64
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:77
-┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ liftoff(::Swan)::Any
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:77
+┌ Warning: Missing implementation
+│   contract = FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
+┌ Warning: Missing implementation
+│   contract = FlyTrait: CanFly ⇢ speed(🔹)::Float64
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
+┌ Warning: Missing implementation
+│   contract = FlyTrait: CanFly ⇢ liftoff(🔹)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
 ❌ Swan is missing these implementations:
-1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Any
-2. FlyTrait: CanFly ⇢ speed(::<Type>)::Float64
-3. FlyTrait: CanFly ⇢ liftoff(::<Type>)::Any
+1. FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
+2. FlyTrait: CanFly ⇢ speed(🔹)::Float64
+3. FlyTrait: CanFly ⇢ liftoff(🔹)::Any
 =#

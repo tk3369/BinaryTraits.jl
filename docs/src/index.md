@@ -50,18 +50,22 @@ What if we want to enforce an interface? e.g. animals that can fly must
 implement a `fly` method.  We can define that interface as follows:
 
 ```julia
-@implement CanFly by fly(direction::Float64, altitude::Float64)
+@implement CanFly by fly(_, direction::Float64, altitude::Float64)
 ```
+
+The underscore character is used to indicate how an object should be passed
+to the `fly` function.
 
 Then, to make sure that our implementation is correct, we can use the `@check`
 macro as shown below:
 
 ```julia
 julia> @check(Duck)
-┌ Warning: Missing implementation: FlyTrait: CanFly ⇢ fly(::Duck, ::Float64, ::Float64)::Nothing
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:170
+┌ Warning: Missing implementation
+│   contract = FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
 ❌ Duck is missing these implementations:
-1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Any
+1. FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
 ```
 
 Now, let's implement the method and check again:
@@ -71,7 +75,7 @@ julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
 
 julia> @check(Duck)
 ✅ Duck has implemented:
-1. FlyTrait: CanFly ⇢ fly(::<Type>, ::Float64, ::Float64)::Any
+1. FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
 ```
 
 ## Applying Holy Traits

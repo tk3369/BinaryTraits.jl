@@ -7,8 +7,8 @@ using Revise, BinaryTraits
 # -----------------------------------------------------------------------------
 import Base: iterate
 @trait Iterable prefix Is,Not
-@implement IsIterable by iterate()::Any
-@implement IsIterable by iterate(state::Any)::Any
+@implement IsIterable by iterate(_)::Any
+@implement IsIterable by iterate(_, state::Any)::Any
 
 # Example from https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration-1
 struct Squares
@@ -23,8 +23,8 @@ Base.iterate(S::Squares, state=1) = state > S.count ? nothing : (state*state, st
 #=
 julia> @check(Squares)
 ✅ Squares has implemented:
-1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
-2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
+1. IterableTrait: IsIterable ⇢ iterate(🔹, ::Any)::Any
+2. IterableTrait: IsIterable ⇢ iterate(🔹)::Any
 =#
 
 # -----------------------------------------------------------------------------
@@ -33,13 +33,13 @@ julia> @check(Squares)
 import Base: getindex, setindex!, firstindex, lastindex
 
 @trait Indexable prefix Is,Not
-@implement IsIndexable by getindex(i::Any)
+@implement IsIndexable by getindex(_, i::Any)
 
 @trait IndexableFromBeginning prefix Is,Not
-@implement IsIndexableFromBeginning by firstindex()
+@implement IsIndexableFromBeginning by firstindex(_)
 
 @trait IndexableAtTheEnd prefix Is,Not
-@implement IsIndexableAtTheEnd by lastindex()
+@implement IsIndexableAtTheEnd by lastindex(_)
 
 # Make sure that `i` is untyped (i.e. `Any`) to adhere to the contract
 function Base.getindex(S::Squares, i)
@@ -50,10 +50,11 @@ end
 @assign Squares with IsIndexable
 @check(Squares)
 #=
+julia> @check(Squares)
 ✅ Squares has implemented:
-1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
-2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
-3. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
+1. IndexableTrait: IsIndexable ⇢ getindex(🔹, ::Any)::Any
+2. IterableTrait: IsIterable ⇢ iterate(🔹, ::Any)::Any
+3. IterableTrait: IsIterable ⇢ iterate(🔹)::Any
 =#
 
 # We want to have the traits for indexing from beginning and at the end
@@ -61,17 +62,19 @@ end
 @check(Squares)
 #=
 julia> @check(Squares)
-┌ Warning: Missing implementation: IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(::Squares)::Any
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
-┌ Warning: Missing implementation: IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::Squares)::Any
-└ @ BinaryTraits ~/.julia/dev/BinaryTraits/src/interface.jl:200
+┌ Warning: Missing implementation
+│   contract = IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(🔹)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
+┌ Warning: Missing implementation
+│   contract = IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(🔹)::Any
+└ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
 ✅ Squares has implemented:
-1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
-2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
-3. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
+1. IndexableTrait: IsIndexable ⇢ getindex(🔹, ::Any)::Any
+2. IterableTrait: IsIterable ⇢ iterate(🔹, ::Any)::Any
+3. IterableTrait: IsIterable ⇢ iterate(🔹)::Any
 ❌ Squares is missing these implementations:
-1. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(::<Type>)::Any
-2. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::<Type>)::Any
+1. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(🔹)::Any
+2. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(🔹)::Any
 =#
 
 # Let's implement them now.
@@ -81,9 +84,9 @@ Base.lastindex(S::Squares) = length(S)
 #=
 julia> @check(Squares)
 ✅ Squares has implemented:
-1. IterableTrait: IsIterable ⇢ iterate(::<Type>)::Any
-2. IterableTrait: IsIterable ⇢ iterate(::<Type>, ::Any)::Any
-3. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(::<Type>)::Any
-4. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(::<Type>)::Any
-5. IndexableTrait: IsIndexable ⇢ getindex(::<Type>, ::Any)::Any
+1. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(🔹)::Any
+2. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(🔹)::Any
+3. IndexableTrait: IsIndexable ⇢ getindex(🔹, ::Any)::Any
+4. IterableTrait: IsIterable ⇢ iterate(🔹, ::Any)::Any
+5. IterableTrait: IsIterable ⇢ iterate(🔹)::Any
 =#
