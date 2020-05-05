@@ -28,7 +28,7 @@ in our [documentation](https://tk3369.github.io/BinaryTraits.jl/dev).
 ```julia
 # Define a trait and its interface contracts
 @trait Fly
-@implement CanFly by fly(destination::Location, speed::Float64)
+@implement CanFly by fly(_, destination::Location, speed::Float64)
 
 # Define your data type and implementation
 struct Bird end
