@@ -1,7 +1,9 @@
 {
     "extensions": [
       "julialang.language-julia",
-      "editorconfig.editorconfig"
+      "editorconfig.editorconfig",
+      "github.vscode-pull-request-github",
+      "ms-vsliveshare.vsliveshare"
     ],
   
     "dockerFile": "Dockerfile"
