@@ -58,8 +58,11 @@ end
 function assign_impl(mod, T, traits)
     expressions = Expr[]
     trait_syms = traits isa Expr && traits.head == :tuple ? traits.args : [traits]
-    for this_can_type in trait_syms
-        trait_function = trait_func_name(mod, this_can_type)
+    # trait_syms could be [:FlyTrait, :SwimTrait]
+
+    for trait_sym in trait_syms
+        trait_function = trait_func_name(mod, trait_sym)
+        this_can_type = mod.eval(Expr(:curly, :Can, trait_sym))
 
         # Add an expression like: <trait>trait(::T) = Can<Trait>()
         # e.g. flytrait(::Duck) = CanFly()

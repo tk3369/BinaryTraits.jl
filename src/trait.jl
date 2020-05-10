@@ -1,6 +1,18 @@
 
 const DEFAULT_TRAIT_SUPERTYPE = Any
 
+export Can, Cannot, Is, Not
+abstract type AbstractTrait{T} end
+struct Can{T} <: AbstractTrait{T} end
+struct Cannot{T} <: AbstractTrait{T} end
+
+# aliases
+const Is{T} = Can{T}
+const Has{T} = Can{T}
+const Not{T} = Cannot{T}
+const Lack{T} = Cannot{T}
+
+
 # -----------------------------------------------------------------------------
 
 """
@@ -20,8 +32,8 @@ macro trait(name::Symbol, args...)
     mod = __module__
 
     trait_type = trait_type_name(name)
-    this_can_type = Symbol("$(pos)$(name)")
-    this_cannot_type = Symbol("$(neg)$(name)")
+    this_can_type = Expr(:curly, :Can, trait_type) #Symbol("$(pos)$(name)")
+    this_cannot_type = Expr(:curly, :Cannot, trait_type) # Symbol("$(neg)$(name)")
     lower_name = lowercase(String(name))
 
     # The default is "cannot".  But if it's a composite trait, then the
@@ -47,7 +59,7 @@ macro trait(name::Symbol, args...)
     # can-type to the underlying's can-types.  It is needed for interface checks.
     composite_expr = if underlying_traits !== nothing
         traits_can_types = underlying_traits.args
-        quote 
+        quote
         BinaryTraits.push_composite_map!($mod, $this_can_type, Set([$(traits_can_types...)]))
         end
     else
@@ -59,11 +71,11 @@ macro trait(name::Symbol, args...)
 
     expr = quote
         abstract type $trait_type <: $category end
-        struct $this_can_type <: $trait_type end
-        struct $this_cannot_type <: $trait_type end
+        # struct $this_can_type <: $trait_type end
+        # struct $this_cannot_type <: $trait_type end
         $(default_trait_function)(x::Any) = $default_expr
 
-        BinaryTraits.istrait(::Type{$trait_type}) = true
+        # BinaryTraits.istrait(::Type{$trait_type}) = true
 
         $composite_expr
     end

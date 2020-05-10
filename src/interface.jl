@@ -114,14 +114,15 @@ fly(duck::Duck, direction::Direction, speed::Float64)
 has_wings(duck::Duck)::Bool
 ```
 """
-macro implement(can_type, by, sig)
+macro implement(trait_type, by, sig)
 
     func_name, func_arg_names, func_arg_types, kwarg_names, return_type =
-        parse_implement(can_type, by, sig)
+        parse_implement(trait_type, by, sig)
     # @info "sig" func_name func_arg_names func_arg_types
 
     kwtuple = tuple(kwarg_names...)
     mod = __module__
+    can_type = Expr(:curly, :Can, trait_type)
 
     # generate code
     expr = quote
@@ -134,9 +135,10 @@ macro implement(can_type, by, sig)
 end
 
 # Parsing function for @implement macro
-function parse_implement(can_type, by, sig)
+function parse_implement(trait_type, by, sig)
     usage = "usage: @implement <Type> by <function specification>[::<ReturnType>]"
-    can_type isa Symbol && sig isa Expr && by === :by || throw(SyntaxError(usage))
+    trait_type isa Symbol && sig isa Expr && by === :by || throw(SyntaxError(usage))
+    can_type = Expr(:curly, :Can, trait_type)
 
     # Is return type specified?
     if sig.head === :(::)

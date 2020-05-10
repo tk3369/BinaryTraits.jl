@@ -6,16 +6,16 @@ module SingleTrait
     @test check(SingleTrait, Bird).result == true # everything ok without traits defined
 
     @trait Fly
-    @assign Bird with CanFly
+    @assign Bird with FlyTrait
 
     function test()
         @testset "Single Trait" begin
-            @test istrait(FlyTrait) == true
-            @test istrait(Int) == false
+            # @test istrait(FlyTrait) == true
+            # @test istrait(Int) == false
             @test supertype(FlyTrait) === Any
-            @test supertype(CanFly) <: FlyTrait
-            @test supertype(CannotFly) <: FlyTrait
-            @test flytrait(Bird()) == CanFly()
+            # @test supertype(CanFly) <: FlyTrait
+            # @test supertype(CannotFly) <: FlyTrait
+            @test flytrait(Bird()) == Can{FlyTrait}()
         end
     end
 end
@@ -26,14 +26,14 @@ module MultipleTraits
     struct Dog end
     @trait Fly
     @trait Swim
-    @assign Duck with CanFly, CanSwim
-    @assign Dog with CanSwim
+    @assign Duck with FlyTrait, SwimTrait
+    @assign Dog with SwimTrait
     function test()
         @testset "Multiple Traits" begin
-            @test flytrait(Dog()) == CannotFly()
-            @test swimtrait(Dog()) == CanSwim()
-            @test flytrait(Duck()) == CanFly()
-            @test swimtrait(Duck()) == CanSwim()
+            @test flytrait(Dog()) isa Cannot{FlyTrait}
+            @test swimtrait(Dog()) isa Can{SwimTrait}
+            @test flytrait(Duck()) isa Can{FlyTrait}
+            @test swimtrait(Duck()) isa Can{SwimTrait}
         end
     end
 end
@@ -53,10 +53,10 @@ end
 module CustomPrefixes
     using BinaryTraits, Test
     @trait Iterable prefix Is,Not
-    @assign AbstractArray with IsIterable
+    @assign AbstractArray with IterableTrait
     next(x) = next(iterabletrait(x), x)
-    next(::IsIterable, x) = iterate(x)
-    next(::NotIterable, x) = :toobad
+    next(::Is{IterableTrait}, x) = iterate(x)
+    next(::Not{IterableTrait}, x) = :toobad
     function test()
         @testset "Custom Prefix" begin
             @test next([1,2,3]) !== nothing

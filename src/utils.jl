@@ -26,9 +26,10 @@ For example, it would be `flytrait` for a `Fly` trait.
 trait_func_name(t) = Symbol(lowercase(string(t)) * "trait")
 
 function trait_func_name(mod, t)
-    sup = supertype(mod.eval(t))
-    tn = Symbol(lowercase(string(nameof(sup))))
-    modn = fullname(parentmodule(sup))
+    tn = Symbol(lowercase("$t"))
+    fn = mod.eval(tn)
+    # tn = Symbol(lowercase(string(nameof(sup))))
+    modn = fullname(parentmodule(fn))
     foldl((a,b) -> Expr(:(.), a, QuoteNode(b)), (modn..., tn))
 end
 
