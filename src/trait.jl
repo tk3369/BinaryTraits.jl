@@ -2,24 +2,22 @@
 const DEFAULT_TRAIT_SUPERTYPE = Any
 
 export Positive, Negative
+export trait
 
 abstract type AbstractTrait{T} end
 struct Positive{T} <: AbstractTrait{T} end
 struct Negative{T} <: AbstractTrait{T} end
 
-# Home for prefix types
+# This sub-module is used to keep prefix types
 module Prefix
     using ..BinaryTraits: Positive, Negative
 end
 
-# See ensure_binary_trait_prefix_type function.
-# Do we really want auto-piracy????!?!?!?!
-# const Is{T} = Can{T}
-# const Has{T} = Can{T}
-# const Not{T} = Cannot{T}
-# const No{T} = Cannot{T}
+"""
+    trait(::Type{T}, x)
 
-export trait
+Returns the singleton positive/negative trait type for object `x`.
+"""
 function trait end
 
 # -----------------------------------------------------------------------------
@@ -126,7 +124,7 @@ function ensure_binary_trait_prefix_type(side, T)
     catch
         # @info "$T doesn't exist.... defining it now"
         Base.eval(BinaryTraits.Prefix, quote
-            const $T{S} = BinaryTraits.$side{S}
+            const $T{S} = $side{S}
             export $T
         end)
         Base.eval(BinaryTraits, quote
