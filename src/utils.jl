@@ -34,17 +34,25 @@ function trait_func_name(mod, t)
 end
 
 """
-Check if `x` is an expression of a tuple of symbols.
+Check if `x` is an expression of a tuple of something.
 If `n` is specified then also check whether the tuple
 has `n` elements. The `op` argument is used to customize
 the check against `n`. Use `>=` or `<=` to check min/max
 constraints.
 """
-function is_tuple_of_symbols(x; n = nothing, op = isequal)
-    x isa Expr &&
-    x.head == :tuple &&
-    all(x -> x isa Symbol, x.args) &&
-    (n === nothing || op(length(x.args), n))
+function is_tuple_of_something(x, checker; n = nothing, op = isequal)
+    return x isa Expr &&
+           x.head == :tuple &&
+           all(checker, x.args) &&
+           (n === nothing || op(length(x.args), n))
+end
+
+function is_tuple_of_curly_expressions(x; kwargs...)
+    return is_tuple_of_something(x, x -> x isa Expr && x.head == :curly; kwargs...)
+end
+
+function is_tuple_of_symbols(x; kwargs...)
+    return is_tuple_of_something(x, x -> x isa Symbol; kwargs...)
 end
 
 """

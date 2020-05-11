@@ -1,18 +1,23 @@
 
 const DEFAULT_TRAIT_SUPERTYPE = Any
 
-# TODO these seems to be too short and vulnerable for name collision?
-export Can, Cannot, Is, Not, Has, No
+export Positive, Negative
 
 abstract type AbstractTrait{T} end
-struct Can{T} <: AbstractTrait{T} end
-struct Cannot{T} <: AbstractTrait{T} end
+struct Positive{T} <: AbstractTrait{T} end
+struct Negative{T} <: AbstractTrait{T} end
 
-# aliases
-const Is{T} = Can{T}
-const Has{T} = Can{T}
-const Not{T} = Cannot{T}
-const No{T} = Cannot{T}
+# Home for prefix types
+module Prefix
+    using ..BinaryTraits: Positive, Negative
+end
+
+# See ensure_binary_trait_prefix_type function.
+# Do we really want auto-piracy????!?!?!?!
+# const Is{T} = Can{T}
+# const Has{T} = Can{T}
+# const Not{T} = Cannot{T}
+# const No{T} = Cannot{T}
 
 export trait
 function trait end
@@ -30,59 +35,52 @@ Create a new trait type for `name` called `\$(name)Trait`:
 * If the `with` clause is provided, then it defines a composite trait from existing traits.
 Note that you must specify at least 2 traits to make a composite trait.
 """
-macro trait(name::Symbol, args...)
+macro trait(trait_type::Symbol, args...)
     category, prefixes, underlying_traits = parse_trait_args(args)
     pos, neg = prefixes.args
     mod = __module__
 
-    trait_type = name #trait_type_name(name)
-    this_can_type = Expr(:curly, :Can, trait_type) #Symbol("$(pos)$(name)")
-    this_cannot_type = Expr(:curly, :Cannot, trait_type) # Symbol("$(neg)$(name)")
-    lower_name = lowercase(String(name))
+    ensure_binary_trait_prefix_type(:Positive, pos)
+    ensure_binary_trait_prefix_type(:Negative, neg)
 
-    # The default is "cannot".  But if it's a composite trait, then the
-    # default is "can" only when all of it's underlying traits are also "can".
-    default_trait_function = trait_func_name(name)
+    this_can_type = Expr(:curly, pos, trait_type)
+    this_cannot_type = Expr(:curly, neg, trait_type)
+
+    # Single traits - the default is "cannot".
+    # Composite traits - the default is the AND-expression of all underlyings.
     default_expr = if underlying_traits !== nothing
-        # Construct something like: flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
-        traits_func_names = [trait_func_name(mod, sym) for sym in underlying_traits.args]
-        traits_can_types  = underlying_traits.args
+        # Composite trait here:
+        # Construct something like: trait(Fly,x) === Can{Fly}() && trait(Swim,x) === Can{Swim}()
         condition =
             Expr(:(&&),
-                [Expr(:call, :(===), Expr(:call, f, :x), Expr(:call, g))
-                        for (f,g) in zip(traits_func_names, traits_can_types)]...)
-
+                [let cap = t.args[1], trait = t.args[2]
+                    :( BinaryTraits.trait($trait, x) === $(cap){$trait}())
+                 end for t in underlying_traits.args]...)
         # Construct expression like: [condition] ? CanFlySwim() : CannotFlySwim()
         Expr(:if, condition, Expr(:call, this_can_type), Expr(:call, this_cannot_type))
     else
-        # The default is "cannot" for every type
+        # Single trait here: default to "cannot" for every type
         Expr(:call, this_cannot_type)
     end
 
     # If it's composite trait, then I want to maintain a mapping from the
-    # can-type to the underlying's can-types.  It is needed for interface checks.
+    # can-type to the underlyings.  It is needed for interface checks.
     composite_expr = if underlying_traits !== nothing
-        traits_can_types = underlying_traits.args
+        underlying_types = underlying_traits.args
         quote
-        BinaryTraits.push_composite_map!($mod, $this_can_type, Set([$(traits_can_types...)]))
+            BinaryTraits.push_composite_map!($mod, $this_can_type, Set([$(underlying_types...)]))
         end
     else
         nothing
     end
 
-    prefixes = (pos, neg)
-    name_node = QuoteNode(name)
-
     expr = quote
         abstract type $trait_type <: $category end
-        # struct $this_can_type <: $trait_type end
-        # struct $this_cannot_type <: $trait_type end
-        #$(default_trait_function)(x::Any) = $default_expr
-        BinaryTraits.trait(::Type{$name}, x::Any) = $default_expr
-        BinaryTraits.istrait(::Type{$name}) = true
-
+        BinaryTraits.trait(::Type{$trait_type}, x::Any) = $default_expr
+        BinaryTraits.istrait(::Type{$trait_type}) = true
         $composite_expr
     end
+
     display_expanded_code(expr)
     return esc(expr)
 end
@@ -93,7 +91,7 @@ Parse arguments for the @trait macro.
 function parse_trait_args(args)
 
     category = Symbol(DEFAULT_TRAIT_SUPERTYPE)
-    prefixes = Expr(:tuple, :Can, :Cannot)
+    prefixes = Expr(:tuple, :Positive, :Negative)
     traits = nothing
 
     usage = "Invalid @trait usage. See doc string for details."
@@ -113,10 +111,28 @@ function parse_trait_args(args)
 
     if length(args) > 0 && args[1] == :with
         traits =  args[2]
-        (traits isa Symbol || is_tuple_of_symbols(traits; n = 2, op = >=)) ||
+        (traits isa Symbol || is_tuple_of_curly_expressions(traits; n = 2, op = >=)) ||
             throw(SyntaxError(usage))
         args = args[3:end]
     end
 
     return (category, prefixes, traits)
+end
+
+# XXX Auto-piracy: define trait prefix type in BinaryTraits.Prefix
+function ensure_binary_trait_prefix_type(side, T)
+    try
+        Base.eval(BinaryTraits.Prefix, T)
+    catch
+        # @info "$T doesn't exist.... defining it now"
+        Base.eval(BinaryTraits.Prefix, quote
+            const $T{S} = BinaryTraits.$side{S}
+            export $T
+        end)
+        Base.eval(BinaryTraits, quote
+            using .Prefix: $T
+            export $T
+        end)
+    end
+    nothing
 end
