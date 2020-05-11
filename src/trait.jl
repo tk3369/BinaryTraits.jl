@@ -1,7 +1,9 @@
 
 const DEFAULT_TRAIT_SUPERTYPE = Any
 
-export Can, Cannot, Is, Not
+# TODO these seems to be too short and vulnerable for name collision?
+export Can, Cannot, Is, Not, Has, No
+
 abstract type AbstractTrait{T} end
 struct Can{T} <: AbstractTrait{T} end
 struct Cannot{T} <: AbstractTrait{T} end
@@ -10,8 +12,10 @@ struct Cannot{T} <: AbstractTrait{T} end
 const Is{T} = Can{T}
 const Has{T} = Can{T}
 const Not{T} = Cannot{T}
-const Lack{T} = Cannot{T}
+const No{T} = Cannot{T}
 
+export trait
+function trait end
 
 # -----------------------------------------------------------------------------
 
@@ -31,7 +35,7 @@ macro trait(name::Symbol, args...)
     pos, neg = prefixes.args
     mod = __module__
 
-    trait_type = trait_type_name(name)
+    trait_type = name #trait_type_name(name)
     this_can_type = Expr(:curly, :Can, trait_type) #Symbol("$(pos)$(name)")
     this_cannot_type = Expr(:curly, :Cannot, trait_type) # Symbol("$(neg)$(name)")
     lower_name = lowercase(String(name))
@@ -73,9 +77,9 @@ macro trait(name::Symbol, args...)
         abstract type $trait_type <: $category end
         # struct $this_can_type <: $trait_type end
         # struct $this_cannot_type <: $trait_type end
-        $(default_trait_function)(x::Any) = $default_expr
-
-        # BinaryTraits.istrait(::Type{$trait_type}) = true
+        #$(default_trait_function)(x::Any) = $default_expr
+        BinaryTraits.trait(::Type{$name}, x::Any) = $default_expr
+        BinaryTraits.istrait(::Type{$name}) = true
 
         $composite_expr
     end

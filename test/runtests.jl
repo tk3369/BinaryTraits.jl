@@ -6,16 +6,13 @@ module SingleTrait
     @test check(SingleTrait, Bird).result == true # everything ok without traits defined
 
     @trait Fly
-    @assign Bird with FlyTrait
+    @assign Bird with Can{Fly}
 
     function test()
         @testset "Single Trait" begin
-            # @test istrait(FlyTrait) == true
-            # @test istrait(Int) == false
-            @test supertype(FlyTrait) === Any
-            # @test supertype(CanFly) <: FlyTrait
-            # @test supertype(CannotFly) <: FlyTrait
-            @test flytrait(Bird()) == Can{FlyTrait}()
+            @test supertype(Fly) === Any
+            @test istrait(Int) == false
+            @test trait(Fly, Bird()) == Can{Fly}()
         end
     end
 end
@@ -26,14 +23,14 @@ module MultipleTraits
     struct Dog end
     @trait Fly
     @trait Swim
-    @assign Duck with FlyTrait, SwimTrait
-    @assign Dog with SwimTrait
+    @assign Duck with Can{Fly}, Can{Swim}
+    @assign Dog with Can{Swim}
     function test()
         @testset "Multiple Traits" begin
-            @test flytrait(Dog()) isa Cannot{FlyTrait}
-            @test swimtrait(Dog()) isa Can{SwimTrait}
-            @test flytrait(Duck()) isa Can{FlyTrait}
-            @test swimtrait(Duck()) isa Can{SwimTrait}
+            @test trait(Fly, Dog()) isa Cannot{Fly}
+            @test trait(Swim, Dog()) isa Can{Swim}
+            @test trait(Fly, Duck()) isa Can{Fly}
+            @test trait(Swim, Duck()) isa Can{Swim}
         end
     end
 end
@@ -45,7 +42,7 @@ module TraitSuperType
     @trait Fly as Mobility
     function test()
         @testset "Super Type" begin
-            @test supertype(FlyTrait) <: Mobility
+            @test supertype(Fly) <: Mobility
         end
     end
 end
@@ -53,10 +50,10 @@ end
 module CustomPrefixes
     using BinaryTraits, Test
     @trait Iterable prefix Is,Not
-    @assign AbstractArray with IterableTrait
-    next(x) = next(iterabletrait(x), x)
-    next(::Is{IterableTrait}, x) = iterate(x)
-    next(::Not{IterableTrait}, x) = :toobad
+    @assign AbstractArray with Is{Iterable}
+    next(x) = next(trait(Iterable, x), x)
+    next(::Is{Iterable}, x) = iterate(x)
+    next(::Not{Iterable}, x) = :toobad
     function test()
         @testset "Custom Prefix" begin
             @test next([1,2,3]) !== nothing
@@ -76,17 +73,17 @@ module CompositeTraits
 
     # assignments
     struct Acura end
-    @assign Acura with CanMove, CanCarryPassenger, HasFourWheels, HasEngine
+    @assign Acura with Can{Move}, Can{CarryPassenger}, Has{FourWheels}, Has{Engine}
     struct Tricycle end
-    @assign Tricycle with CanMove, CanCarryPassenger
+    @assign Tricycle with Can{Move}, Can{CarryPassenger}
 
     # composite
-    @trait Car prefix Is,Not with CanMove, CanCarryPassenger, HasFourWheels, HasEngine
+    @trait Car prefix Is,Not with Can{Move}, Can{CarryPassenger}, Has{FourWheels}, Has{Engine}
 
     function test()
         @testset "Composite" begin
-            @test cartrait(Acura()) == IsCar()
-            @test cartrait(Tricycle()) == NotCar()
+            @test trait(Car, Acura()) == Is{Car}()
+            @test trait(Car, Tricycle()) == Not{Car}()
         end
     end
 end

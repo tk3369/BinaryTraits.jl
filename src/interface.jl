@@ -114,20 +114,19 @@ fly(duck::Duck, direction::Direction, speed::Float64)
 has_wings(duck::Duck)::Bool
 ```
 """
-macro implement(trait_type, by, sig)
+macro implement(cap, by, sig)
 
     func_name, func_arg_names, func_arg_types, kwarg_names, return_type =
-        parse_implement(trait_type, by, sig)
+        parse_implement(cap, by, sig)
     # @info "sig" func_name func_arg_names func_arg_types
 
     kwtuple = tuple(kwarg_names...)
     mod = __module__
-    can_type = Expr(:curly, :Can, trait_type)
 
     # generate code
     expr = quote
         function $func_name end
-        BinaryTraits.register($mod, $can_type, $func_name,
+        BinaryTraits.register($mod, $cap, $func_name,
                               ($(func_arg_types...),), $kwtuple, $return_type)
     end
     display_expanded_code(expr)
@@ -135,10 +134,9 @@ macro implement(trait_type, by, sig)
 end
 
 # Parsing function for @implement macro
-function parse_implement(trait_type, by, sig)
+function parse_implement(cap, by, sig)
     usage = "usage: @implement <Type> by <function specification>[::<ReturnType>]"
-    trait_type isa Symbol && sig isa Expr && by === :by || throw(SyntaxError(usage))
-    can_type = Expr(:curly, :Can, trait_type)
+    cap isa Expr && sig isa Expr && by === :by || throw(SyntaxError(usage))
 
     # Is return type specified?
     if sig.head === :(::)
@@ -166,11 +164,11 @@ function parse_implement(trait_type, by, sig)
     # further arguments after the keyword argument list
     for (idx, x) in enumerate(sig.args[firstarg:end])  # x must be Expr of 1 or 2 symbols
         push!(func_arg_names, extract_name(x, Symbol("x$idx")))
-        push!(func_arg_types, extract_type(x, can_type, :(Base.Bottom)))
+        push!(func_arg_types, extract_type(x, cap, :(Base.Bottom)))
     end
 
     # Check that at least one of the arguments is the can-type
-    if findfirst(x -> x === can_type, func_arg_types) === nothing
+    if findfirst(x -> x === cap, func_arg_types) === nothing
         throw(SyntaxError("The function signature must have at least 1 underscore."))
     end
 

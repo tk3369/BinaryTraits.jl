@@ -56,25 +56,30 @@ macro assign(T::Union{Expr,Symbol}, with::Symbol, traits::Union{Expr,Symbol})
 end
 
 function assign_impl(mod, T, traits)
+
+    # There are two possible AST cases:
+    # 1. @assign T with Can{X}
+    # 2. @assign T with Can{X},Can{Y},...
+    #
+    # The first case would be an Expr with head == :curly
+    # The second case would be an Expr with head == :tuple and sub-expr of :curly's
+    capabilities = if traits isa Expr && traits.head == :tuple
+        [(side = x.args[1], trait = x.args[2]) for x in traits.args]
+    elseif traits isa Expr && traits.head == :curly
+        x = traits
+        [(side = x.args[1], trait = x.args[2])]
+    else
+        throw(SyntaxError("Must assign types with trait can/cannot-types"))
+    end
+
+    # Build up expressions for each capability
     expressions = Expr[]
-    trait_syms = traits isa Expr && traits.head == :tuple ? traits.args : [traits]
-    # trait_syms could be [:FlyTrait, :SwimTrait]
-
-    for trait_sym in trait_syms
-        trait_function = trait_func_name(mod, trait_sym)
-        this_can_type = mod.eval(Expr(:curly, :Can, trait_sym))
-
-        # Add an expression like: <trait>trait(::T) = Can<Trait>()
-        # e.g. flytrait(::Duck) = CanFly()
-        push!(expressions,
-            Expr(:(=),
-                Expr(:call, trait_function, Expr(:(::), T)),
-                Expr(:call, this_can_type)))
-
-        # e.g. BinaryTraits.assign(MyModule, Duck, CanFly)
+    for cap in capabilities
         push!(expressions,
                 quote
-                    BinaryTraits.assign($mod, $T, $this_can_type)
+                    BinaryTraits.trait(::Type{$(cap.trait)}, ::S) where {S <: $T} =
+                        $(cap.side){$(cap.trait)}()
+                    BinaryTraits.assign($mod, $T, $(cap.side){$(cap.trait)})
                 end)
     end
 
