@@ -77,7 +77,7 @@ function assign_impl(mod, T, traits)
     for cap in capabilities
         push!(expressions,
                 quote
-                    BinaryTraits.trait(::Type{$(cap.trait)}, ::S) where {S <: $T} =
+                    BinaryTraits.trait(::Type{$(cap.trait)}, ::Type{<:$T}) =
                         $(cap.side){$(cap.trait)}()
                     BinaryTraits.assign($mod, $T, $(cap.side){$(cap.trait)})
                 end)
