@@ -74,7 +74,7 @@ macro trait(trait_type::Symbol, args...)
 
     expr = quote
         abstract type $trait_type <: $category end
-        BinaryTraits.trait(::Type{$trait_type}, x::Any) = $default_expr
+        BinaryTraits.trait(::Type{$trait_type}, x::Type) = $default_expr
         BinaryTraits.istrait(::Type{$trait_type}) = true
         $composite_expr
     end
