@@ -4,9 +4,9 @@ const DEFAULT_TRAIT_SUPERTYPE = Any
 export Positive, Negative
 export trait
 
-abstract type AbstractTrait{T} end
-struct Positive{T} <: AbstractTrait{T} end
-struct Negative{T} <: AbstractTrait{T} end
+abstract type BinaryTrait{T} end
+struct Positive{T} <: BinaryTrait{T} end
+struct Negative{T} <: BinaryTrait{T} end
 
 # This sub-module is used to keep prefix types
 module Prefix
