@@ -5,32 +5,14 @@ module SingleTrait
 
     @test check(SingleTrait, Bird).result == true # everything ok without traits defined
 
-    @trait Fly prefix Can,Cannot
-    @assign Bird with Can{Fly}
+    @trait Fly
+    @assign Bird with Positive{Fly}
 
     function test()
         @testset "Single Trait" begin
             @test supertype(Fly) === Any
             @test istrait(Int) == false
-            @test trait(Fly, Bird) == Can{Fly}()
-        end
-    end
-end
-
-module MultipleTraits
-    using BinaryTraits, Test
-    struct Duck end
-    struct Dog end
-    @trait Fly prefix Can,Cannot
-    @trait Swim prefix Can,Cannot
-    @assign Duck with Can{Fly}, Can{Swim}
-    @assign Dog with Can{Swim}
-    function test()
-        @testset "Multiple Traits" begin
-            @test trait(Fly, Dog) isa Cannot{Fly}
-            @test trait(Swim, Dog) isa Can{Swim}
-            @test trait(Fly, Duck) isa Can{Fly}
-            @test trait(Swim, Duck) isa Can{Swim}
+            @test trait(Fly, Bird) == Positive{Fly}()
         end
     end
 end
@@ -47,8 +29,9 @@ module TraitSuperType
     end
 end
 
-module CustomPrefixes
-    using BinaryTraits, Test
+module PredefinedPrefixes
+    using BinaryTraits
+    using Test
     @trait Iterable prefix Is,Not
     @assign AbstractArray with Is{Iterable}
     next(x::T) where T = next(trait(Iterable, T), x)
@@ -62,14 +45,36 @@ module CustomPrefixes
     end
 end
 
+module MultipleTraits
+    using BinaryTraits
+    using BinaryTraits.Prefix: Can, Cannot
+    using Test
+    struct Duck end
+    struct Dog end
+    @trait Fly
+    @trait Swim
+    @assign Duck with Can{Fly}, Can{Swim}
+    @assign Dog with Can{Swim}
+    function test()
+        @testset "Multiple Traits" begin
+            @test trait(Fly, Dog) isa Cannot{Fly}
+            @test trait(Swim, Dog) isa Can{Swim}
+            @test trait(Fly, Duck) isa Can{Fly}
+            @test trait(Swim, Duck) isa Can{Swim}
+        end
+    end
+end
+
 module CompositeTraits
-    using BinaryTraits, Test
+    using BinaryTraits
+    using BinaryTraits.Prefix: Has, Is, Not, Can
+    using Test
 
     # possible traits
     @trait Move
     @trait CarryPassenger
-    @trait FourWheels prefix Has,No
-    @trait Engine prefix Has,No
+    @trait FourWheels
+    @trait Engine
 
     # assignments
     struct Acura end
@@ -78,7 +83,7 @@ module CompositeTraits
     @assign Tricycle with Can{Move}, Can{CarryPassenger}
 
     # composite
-    @trait Car prefix Is,Not with Can{Move}, Can{CarryPassenger}, Has{FourWheels}, Has{Engine}
+    @trait Car with Can{Move}, Can{CarryPassenger}, Has{FourWheels}, Has{Engine}
 
     function test()
         @testset "Composite" begin
@@ -91,6 +96,7 @@ end
 module SyntaxErrors
     using BinaryTraits, Test
     using BinaryTraits: SyntaxError
+    using BinaryTraits.Prefix: Can
 
     # This macro expands to testing code that returns true when syntax error
     # is detected properly
@@ -106,8 +112,8 @@ module SyntaxErrors
             end)
     end
 
-    @trait Eat prefix Can,Cannot
-    @trait Drink prefix Can,Cannot
+    @trait Eat
+    @trait Drink
     struct Dog end
 
     function test()
@@ -130,15 +136,17 @@ module SyntaxErrors
 end
 
 module Interfaces
-    using BinaryTraits, Test
+    using BinaryTraits
     using BinaryTraits: SyntaxError, extract_type
+    using BinaryTraits.Prefix: Can, Is
+    using Test
 
     const SUPPORT_KWARGS = VERSION >= v"1.2"
     const mod = @__MODULE__
 
     struct Bird end
     # Fly trait requires multiple contracts with variety of func signatures
-    @trait Fly prefix Can,Cannot
+    @trait Fly
     @assign Bird with Can{Fly}
     bird_check = @check(Bird)
     @test bird_check.result == true # everything ok without interface contracts
@@ -148,7 +156,7 @@ module Interfaces
     @implement Can{Fly} by flyto(::Float64, ::Float64, _)::String  # fly to (x,y)
 
     # Pretty trait requires a single contract
-    @trait Pretty prefix Is,Not
+    @trait Pretty
     @implement Is{Pretty} by look_at_the_mirror_daily(_)::Bool
 
     # Bird satisfies all contracts from FlyTrait by concrete type
@@ -174,7 +182,7 @@ module Interfaces
     look_at_the_mirror_daily(::Flamingo) = true
 
     # Test composite traits - total underlying 4 contracts required for this!
-    @trait FlyPretty prefix Is,Not with Can{Fly}, Is{Pretty}
+    @trait FlyPretty with Can{Fly}, Is{Pretty}
 
     # Crane partially satisfies FlyTrait and fully satisfies Pretty trait
     struct Crane end
@@ -184,7 +192,7 @@ module Interfaces
     look_at_the_mirror_daily(::Crane) = true
 
     struct Penguin end
-    @trait Dive prefix Can,Cannot
+    @trait Dive
     @assign Penguin with Can{Dive}
     @implement Can{Dive} by dive1(_, ::Integer)           # no argument name
     @implement Can{Dive} by dive2(_, ::Vector{<:Integer}) # parameterized type
@@ -220,7 +228,7 @@ module Interfaces
     struct Kiwi end
 
     # weird argument types in contract specs
-    @trait Creep prefix Can,Cannot
+    @trait Creep
     @implement Can{Creep} by creep1(_, a::Int=5) # argument assignment
 
     struct Snake end
@@ -354,10 +362,12 @@ module Verbose
 end
 
 module CrossModule
-    using Test, Logging, BinaryTraits
+    using BinaryTraits
+    using Test, Logging
     module X
         using BinaryTraits
-        @trait RowTable prefix Is,Not
+        using BinaryTraits.Prefix: Is
+        @trait RowTable
         @implement Is{RowTable} by row(_, ::Integer)
         __init__() = inittraits(@__MODULE__)
     end
@@ -365,6 +375,7 @@ module CrossModule
     module Y
         using Test
         using BinaryTraits
+        using BinaryTraits.Prefix: Is
         using ..X
         struct AwesomeTable end
         @assign AwesomeTable with Is{X.RowTable}
@@ -384,9 +395,9 @@ end
 
 @testset "BinaryTraits Tests" begin
     import .SingleTrait;        SingleTrait.test()
-    import .MultipleTraits;     MultipleTraits.test()
     import .TraitSuperType;     TraitSuperType.test()
-    import .CustomPrefixes;     CustomPrefixes.test()
+    import .PredefinedPrefixes; PredefinedPrefixes.test()
+    import .MultipleTraits;     MultipleTraits.test()
     import .CompositeTraits;    CompositeTraits.test()
     import .SyntaxErrors;       SyntaxErrors.test()
     import .Interfaces;         Interfaces.test()

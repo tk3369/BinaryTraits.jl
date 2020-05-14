@@ -1,16 +1,28 @@
 
 const DEFAULT_TRAIT_SUPERTYPE = Any
 
-export Positive, Negative
 export trait
 
 abstract type BinaryTrait{T} end
-struct Positive{T} <: BinaryTrait{T} end
-struct Negative{T} <: BinaryTrait{T} end
 
-# This sub-module is used to keep prefix types
+# This sub-module is used to keep standard prefix types
 module Prefix
-    using ..BinaryTraits: Positive, Negative
+    using ..BinaryTraits: BinaryTrait
+
+    # default types for both sides
+    struct Positive{T} <: BinaryTrait{T} end
+    struct Negative{T} <: BinaryTrait{T} end
+
+    # Optional positive types that may be brought into user module namespace
+    const Can = Positive
+    const Has = Positive
+    const Is = Positive
+
+    # Optional negative types that may be brought into user module namespace
+    const Cannot = Negative
+    const IsNot = Negative
+    const No = Negative
+    const Not = Negative
 end
 
 """
@@ -38,8 +50,9 @@ macro trait(trait_type::Symbol, args...)
     pos, neg = prefixes.args
     mod = __module__
 
-    ensure_binary_trait_prefix_type(:Positive, pos)
-    ensure_binary_trait_prefix_type(:Negative, neg)
+    # Try to import the predefined prefix types to user module's namespace
+    import_prefix_type(mod, pos)
+    import_prefix_type(mod, neg)
 
     this_can_type = Expr(:curly, pos, trait_type)
     this_cannot_type = Expr(:curly, neg, trait_type)
@@ -117,20 +130,20 @@ function parse_trait_args(args)
     return (category, prefixes, traits)
 end
 
-# XXX Auto-piracy: define trait prefix type in BinaryTraits.Prefix
-function ensure_binary_trait_prefix_type(side, T)
+"""
+    import_prefix_type(m::Module, prefix::Symbol)
+
+Import predefined prexies `prefix` from BinaryTraits.Prefix module into
+the specified module `m`. If the name is already bounded with a different value
+in the module, an error is raised.
+"""
+function import_prefix_type(m::Module, prefix::Symbol)
+    existing_names = names(m, all = true, imported = true)
     try
-        Base.eval(BinaryTraits.Prefix, T)
+        prefix_type = Base.eval(m, prefix)
+        parentmodule(prefix_type) == BinaryTraits.Prefix ||
+            error("Unable to import prefix `$prefix` as it already exists in module $m")
     catch
-        # @info "$T doesn't exist.... defining it now"
-        Base.eval(BinaryTraits.Prefix, quote
-            const $T{S} = $side{S}
-            export $T
-        end)
-        Base.eval(BinaryTraits, quote
-            using .Prefix: $T
-            export $T
-        end)
+        Base.eval(m, :(import BinaryTraits.Prefix: $prefix))
     end
-    nothing
 end
