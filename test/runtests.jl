@@ -5,14 +5,14 @@ module SingleTrait
 
     @test check(SingleTrait, Bird).result == true # everything ok without traits defined
 
-    @trait Fly
+    @trait Fly prefix Can,Cannot
     @assign Bird with Can{Fly}
 
     function test()
         @testset "Single Trait" begin
             @test supertype(Fly) === Any
             @test istrait(Int) == false
-            @test trait(Fly, Bird()) == Can{Fly}()
+            @test trait(Fly, Bird) == Can{Fly}()
         end
     end
 end
@@ -21,16 +21,16 @@ module MultipleTraits
     using BinaryTraits, Test
     struct Duck end
     struct Dog end
-    @trait Fly
-    @trait Swim
+    @trait Fly prefix Can,Cannot
+    @trait Swim prefix Can,Cannot
     @assign Duck with Can{Fly}, Can{Swim}
     @assign Dog with Can{Swim}
     function test()
         @testset "Multiple Traits" begin
-            @test trait(Fly, Dog()) isa Cannot{Fly}
-            @test trait(Swim, Dog()) isa Can{Swim}
-            @test trait(Fly, Duck()) isa Can{Fly}
-            @test trait(Swim, Duck()) isa Can{Swim}
+            @test trait(Fly, Dog) isa Cannot{Fly}
+            @test trait(Swim, Dog) isa Can{Swim}
+            @test trait(Fly, Duck) isa Can{Fly}
+            @test trait(Swim, Duck) isa Can{Swim}
         end
     end
 end
@@ -51,7 +51,7 @@ module CustomPrefixes
     using BinaryTraits, Test
     @trait Iterable prefix Is,Not
     @assign AbstractArray with Is{Iterable}
-    next(x) = next(trait(Iterable, x), x)
+    next(x::T) where T = next(trait(Iterable, T), x)
     next(::Is{Iterable}, x) = iterate(x)
     next(::Not{Iterable}, x) = :toobad
     function test()
@@ -82,8 +82,8 @@ module CompositeTraits
 
     function test()
         @testset "Composite" begin
-            @test trait(Car, Acura()) == Is{Car}()
-            @test trait(Car, Tricycle()) == Not{Car}()
+            @test trait(Car, Acura) == Is{Car}()
+            @test trait(Car, Tricycle) == Not{Car}()
         end
     end
 end
@@ -106,8 +106,8 @@ module SyntaxErrors
             end)
     end
 
-    @trait Eat
-    @trait Drink
+    @trait Eat prefix Can,Cannot
+    @trait Drink prefix Can,Cannot
     struct Dog end
 
     function test()
@@ -118,13 +118,13 @@ module SyntaxErrors
             @test @testme @trait Fly prefix 1,2        # wrong type
             @test @testme @trait Fly prefix Is         # needs two symbols
             @test @testme @trait Fly prefix Is,Not,Ha  # needs two symbols
-            @test @testme @trait Fly with Eat          # must have at least 2 sub-traits
-            @test @testme @trait Fly with Eat,Drink,1  # 1 is not a symbol
+            @test @testme @trait Fly with Can{Eat}     # must have at least 2 sub pos/neg trait type
+            @test @testme @trait Fly with Can{Eat},Can{Drink},1  # 1 is not a pos/neg trait type
 
-            @test @testme @assign Dog with 1           # 1 is not a symbol
+            @test @testme @assign Dog with 1           # 1 is not a pos/neg trait type
 
-            @test @testme @implement CanCreep by creep2(_, []) # invalid argument
-            @test @testme @implement CanCreep by creep3()      # no underscore
+            @test @testme @implement Can{Creep} by creep2(_, []) # invalid argument
+            @test @testme @implement Can{Creep} by creep3()      # no underscore
         end
     end
 end
@@ -138,18 +138,18 @@ module Interfaces
 
     struct Bird end
     # Fly trait requires multiple contracts with variety of func signatures
-    @trait Fly
-    @assign Bird with CanFly
+    @trait Fly prefix Can,Cannot
+    @assign Bird with Can{Fly}
     bird_check = @check(Bird)
     @test bird_check.result == true # everything ok without interface contracts
 
-    @implement CanFly by liftoff(_)
-    @implement CanFly by speed(_, resistence::Float64)::Float64
-    @implement CanFly by flyto(::Float64, ::Float64, _)::String  # fly to (x,y)
+    @implement Can{Fly} by liftoff(_)
+    @implement Can{Fly} by speed(_, resistence::Float64)::Float64
+    @implement Can{Fly} by flyto(::Float64, ::Float64, _)::String  # fly to (x,y)
 
     # Pretty trait requires a single contract
     @trait Pretty prefix Is,Not
-    @implement IsPretty by look_at_the_mirror_daily(_)::Bool
+    @implement Is{Pretty} by look_at_the_mirror_daily(_)::Bool
 
     # Bird satisfies all contracts from FlyTrait by concrete type
     liftoff(::Bird) = "hi ho!"
@@ -158,45 +158,45 @@ module Interfaces
 
     # Duck satisfies partial contracts from FlyTrait by concrete type
     struct Duck end
-    @assign Duck with CanFly
+    @assign Duck with Can{Fly}
     liftoff(::Duck) = "hi ho!"
 
     # Chicken does not satisfy any contract from FlyTrait
     struct Chicken end
-    @assign Chicken with CanFly
+    @assign Chicken with Can{Fly}
 
     # Flamingo exhibits both Fly and Pretty traits
     struct Flamingo end
-    @assign Flamingo with CanFly, IsPretty  # composite trait
+    @assign Flamingo with Can{Fly}, Is{Pretty}  # composite trait
     liftoff(::Flamingo) = "wee!"
     speed(::Flamingo, resistence::Float64) = 150 - resistence
     flyto(x::Float64, y::Float64, ::Flamingo) = "Arrvied at ($x, $y)"
     look_at_the_mirror_daily(::Flamingo) = true
 
     # Test composite traits - total underlying 4 contracts required for this!
-    @trait FlyPretty prefix Is,Not with CanFly, IsPretty
+    @trait FlyPretty prefix Is,Not with Can{Fly}, Is{Pretty}
 
     # Crane partially satisfies FlyTrait and fully satisfies Pretty trait
     struct Crane end
-    @assign Crane with IsFlyPretty
+    @assign Crane with Is{FlyPretty}
     speed(::Crane, resistence::Float64) = 150 - resistence
     flyto(x::Float64, y::Float64, ::Crane) = "Arrvied at ($x, $y)"
     look_at_the_mirror_daily(::Crane) = true
 
     struct Penguin end
-    @trait Dive
-    @assign Penguin with CanDive
-    @implement CanDive by dive1(_, ::Integer)           # no argument name
-    @implement CanDive by dive2(_, ::Vector{<:Integer}) # parameterized type
+    @trait Dive prefix Can,Cannot
+    @assign Penguin with Can{Dive}
+    @implement Can{Dive} by dive1(_, ::Integer)           # no argument name
+    @implement Can{Dive} by dive2(_, ::Vector{<:Integer}) # parameterized type
     if SUPPORT_KWARGS
-        @implement CanDive by dive31(_, x::Real;)            # keyword arguments
-        @implement CanDive by dive32(_, x::Real; kw::Real)   # keyword arguments
-        @implement CanDive by dive33(_, y; kw1::Real, kw2)   # keyword arguments
-        @implement CanDive by dive34(_, x; kw1)
+        @implement Can{Dive} by dive31(_, x::Real;)            # keyword arguments
+        @implement Can{Dive} by dive32(_, x::Real; kw::Real)   # keyword arguments
+        @implement Can{Dive} by dive33(_, y; kw1::Real, kw2)   # keyword arguments
+        @implement Can{Dive} by dive34(_, x; kw1)
     end
-    @implement CanDive by dive4(_, ::Base.Bottom)
-    @implement CanDive by dive5(_, x)
-    @implement CanDive by dive6(_, ::Number)
+    @implement Can{Dive} by dive4(_, ::Base.Bottom)
+    @implement Can{Dive} by dive5(_, x)
+    @implement Can{Dive} by dive6(_, ::Number)
 
     dive1(::Penguin, ::Real) = 1                # Real >: Integer
     dive2(::Penguin, ::Vector) = 2              # Vector >: Vector{<:Integer}
@@ -212,29 +212,29 @@ module Interfaces
     abstract type Animal end
     struct Rabbit <: Animal end
     @trait Eat
-    @assign Animal with CanEat
-    @implement CanEat by eat(_)
+    @assign Animal with Can{Eat}
+    @implement Can{Eat} by eat(_)
     eat(::Animal) = 1
 
     # no contract requirements (code coverage)
     struct Kiwi end
 
     # weird argument types in contract specs
-    @trait Creep
-    @implement CanCreep by creep1(_, a::Int=5) # argument assignment
+    @trait Creep prefix Can,Cannot
+    @implement Can{Creep} by creep1(_, a::Int=5) # argument assignment
 
     struct Snake end
-    @assign Snake with CanCreep
+    @assign Snake with Can{Creep}
     creep1(::Snake, ::Integer) = 1
 
     @trait PlayNice
-    @implement CanPlayNice by play(_,_)
+    @implement Can{PlayNice} by play(_,_)
     struct Dog end
     struct Cat end
     play(::Dog, ::Dog) = 1
     play(::Cat, ::Dog) = 2
-    @assign Dog with CanPlayNice
-    @assign Cat with CanPlayNice
+    @assign Dog with Can{PlayNice}
+    @assign Cat with Can{PlayNice}
 
     function test()
         @testset "Interface validation" begin
@@ -317,7 +317,7 @@ module Interfaces
             @test check_cat.result === false   # Cat does not play nice with Cat
 
             # code coverage
-            @test_throws SyntaxError extract_type(:([]), :(CanFly), nothing)
+            @test_throws SyntaxError extract_type(:([]), :(Can{Fly}), nothing)
 
         end
     end
@@ -335,7 +335,7 @@ module Verbose
                 @macroexpand($ex)
             end
             s = String(take!(buf))
-            @test occursin($expected, s)
+            @test occursin(Regex($expected), s)
         end)
     end
 
@@ -346,8 +346,9 @@ module Verbose
     function test()
         BinaryTraits.set_verbose(true)
         @testset "Verbose" begin
-            @testme "struct CanScratch" @trait Scratch
-            @testme "scratchtrait(::Cat) = CanScratch()" @assign Cat with CanScratch
+            @testme "Cannot{Scratch}()" @trait Scratch prefix Can,Cannot
+            @testme "assign(.*, Cat, Can{Scratch})" @assign Cat with Can{Scratch}
+            @testme "function scratch end" @implement Can{Scratch} by scratch(_)
         end
     end
 end
@@ -357,7 +358,7 @@ module CrossModule
     module X
         using BinaryTraits
         @trait RowTable prefix Is,Not
-        @implement IsRowTable by row(_, ::Integer)
+        @implement Is{RowTable} by row(_, ::Integer)
         __init__() = inittraits(@__MODULE__)
     end
 
@@ -366,7 +367,7 @@ module CrossModule
         using BinaryTraits
         using ..X
         struct AwesomeTable end
-        @assign AwesomeTable with X.IsRowTable
+        @assign AwesomeTable with Is{X.RowTable}
         r = @check(AwesomeTable)
         @test r.implemented |> length == 0
         X.row(::AwesomeTable, ::Number) = 1
