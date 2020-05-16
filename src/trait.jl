@@ -7,11 +7,16 @@ abstract type BinaryTrait{T} end
 
 # This sub-module is used to keep standard prefix types
 module Prefix
+    import ..BinaryTraits
     using ..BinaryTraits: BinaryTrait
 
     # default types for both sides
     struct Positive{T} <: BinaryTrait{T} end
     struct Negative{T} <: BinaryTrait{T} end
+
+    # Positive/Negative trait types are traits
+    BinaryTraits.is_trait(::Type{Positive{T}}) where T = true
+    BinaryTraits.is_trait(::Type{Negative{T}}) where T = true
 
     # Optional positive types that may be brought into user module namespace
     const Can = Positive

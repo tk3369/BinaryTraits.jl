@@ -12,6 +12,9 @@ module SingleTrait
         @testset "Single Trait" begin
             @test supertype(Fly) === Any
             @test is_trait(Int) == false
+            @test is_trait(Fly) == true
+            @test is_trait(Positive{Fly}) == true
+            @test is_trait(Negative{Fly}) == true
             @test trait(Fly, Bird) == Positive{Fly}()
         end
     end

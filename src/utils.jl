@@ -1,8 +1,7 @@
 """
     is_trait(x)
 
-Return `true` if x is a trait type e.g. `FlyTrait` is a trait type when
-it is defined by a statement like `@trait Fly`.
+Return `true` if x is a trait type.
 """
 is_trait(x::DataType) = false
 
