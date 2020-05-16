@@ -59,7 +59,7 @@ end
     display_expanded_code(expr::Expr)
 
 Display the expanded code from a macro for debugging purpose.
-Only works when the verbose flag is set using `set_verbose`.
+Only works when the verbose flag is set using `set_verbose!`.
 """
 function display_expanded_code(expr::Expr)
     if VERBOSE[]
@@ -106,7 +106,7 @@ Try first local (module-) table, if key not found use global table.
 """
 function getvalues(mod::Module, sym::Symbol, key)
     st = get_local_storage(mod)
-    if st != nothing
+    if st !== nothing
         tab = getproperty(st, sym)
         haskey(tab, key) && return tab[key]
     end

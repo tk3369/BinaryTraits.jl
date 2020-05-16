@@ -46,7 +46,7 @@ more transparent, you can turn on verbose mode.  All macro expansions are then
 displayed automatically.
 
 ```julia
-julia> BinaryTraits.set_verbose(true)
+julia> BinaryTraits.set_verbose!(true)
 true
 
 julia> @trait Iterable

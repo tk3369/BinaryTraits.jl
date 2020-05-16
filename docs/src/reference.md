@@ -16,7 +16,7 @@ traits
 is_trait
 required_contracts
 init_traits
-set_verbose
+set_verbose!
 ```
 
 ## Types

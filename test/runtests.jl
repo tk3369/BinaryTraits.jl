@@ -352,7 +352,7 @@ module Verbose
 
     # Testing verbose mode
     function test()
-        BinaryTraits.set_verbose(true)
+        BinaryTraits.set_verbose!(true)
         @testset "Verbose" begin
             @testme "Cannot{Scratch}()" @trait Scratch prefix Can,Cannot
             @testme "assign(.*, Cat, Can{Scratch})" @assign Cat with Can{Scratch}
