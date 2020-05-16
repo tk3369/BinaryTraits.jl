@@ -11,7 +11,7 @@ module SingleTrait
     function test()
         @testset "Single Trait" begin
             @test supertype(Fly) === Any
-            @test istrait(Int) == false
+            @test is_trait(Int) == false
             @test trait(Fly, Bird) == Positive{Fly}()
         end
     end
@@ -369,7 +369,7 @@ module CrossModule
         using BinaryTraits.Prefix: Is
         @trait RowTable
         @implement Is{RowTable} by row(_, ::Integer)
-        __init__() = inittraits(@__MODULE__)
+        __init__() = init_traits(@__MODULE__)
     end
 
     module Y
@@ -382,7 +382,7 @@ module CrossModule
         r = @check(AwesomeTable)
         @test r.implemented |> length == 0
         X.row(::AwesomeTable, ::Number) = 1
-        __init__() = inittraits(@__MODULE__)
+        __init__() = init_traits(@__MODULE__)
     end
 
     function test()

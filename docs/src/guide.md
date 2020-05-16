@@ -211,7 +211,7 @@ code in its `__init__` function:
 
 ```julia
 function __init__()
-    inittraits(@__MODULE__)
+    init_traits(@__MODULE__)
 end
 ```
 

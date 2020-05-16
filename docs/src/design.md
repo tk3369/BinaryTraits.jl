@@ -5,7 +5,7 @@ The machinery is extremely simple. When you define a traits like `@trait Fly`, i
 ```julia
 abstract type Fly end
 trait(::Type{Fly}, x::Type) = Negative{Fly}()
-istrait(::Type{Fly}) = true
+is_trait(::Type{Fly}) = true
 ```
 
 As you can see, a new abstract type called  `Fly` is automatically generated. By default, the `trait` function just returns an instance of `Negative{Fly}`.  Now, when you do `@assign Duck with Can{Fly},Can{Swim}`, the `trait` function returns the
@@ -36,7 +36,7 @@ function trait(::Type{FlySwim}, x::Type)
     end
 end
 
-istrait(::Type{FlySwim}) = true
+is_trait(::Type{FlySwim}) = true
 ```
 
 ## Turning on verbose mode
@@ -57,7 +57,7 @@ julia> @trait Iterable
 │        BinaryTraits.trait(::Type{Iterable}, x::Type) = begin
 │                Negative{Iterable}()
 │            end
-│        BinaryTraits.istrait(::Type{Iterable}) = begin
+│        BinaryTraits.is_trait(::Type{Iterable}) = begin
 │                true
 │            end
 │        nothing

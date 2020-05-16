@@ -1,10 +1,10 @@
 """
-    istrait(x)
+    is_trait(x)
 
 Return `true` if x is a trait type e.g. `FlyTrait` is a trait type when
 it is defined by a statement like `@trait Fly`.
 """
-istrait(x::DataType) = false
+is_trait(x::DataType) = false
 
 """
     trait_type_name(t)
@@ -170,19 +170,19 @@ function move_to_global!(mod::Module)
 end
 
 """
-    inittraits(module::Module)
+    init_traits(module::Module)
 
-This function should be called like `inittraits(@__MODULE__)` inside the
+This function should be called like `init_traits(@__MODULE__)` inside the
 `__init__()' method of each module using `BinaryTraits`.
 
 Alternatively it can be called outside the module this way:
-`using Module; inittraits(Module)`, if `Module` missed to call it
+`using Module; init_traits(Module)`, if `Module` missed to call it
 within its `__init__` function.
 
 This is required only if the traits/interfaces are expected to be shared
 across modules.
 """
-function inittraits(mod::Module)
+function init_traits(mod::Module)
     move_to_global!(mod)
 end
 
