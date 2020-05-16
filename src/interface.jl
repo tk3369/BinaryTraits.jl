@@ -1,33 +1,33 @@
 """
-    register(m::Module, can_type::DataType, func::Function, args::NTuple{N,DataType},
+    register(m::Module, trait::DataType, func::Function, args::NTuple{N,DataType},
              kwargs::NTuple{N,Symbol}, ret::DataType) where N
 
-Register a function `func` with the specified `can_type` type.
+Register a function `func` with the specified `trait` type.
 The `func` is expected to take arguments `args` and keyword arguments `kwargs`
 and return a value of type `ret`.
 """
 function register(m::Module,
-                  can_type::DataType,
+                  trait::DataType,
                   func::Function,
                   args::Tuple,
                   kwargs::NTuple{N,Symbol},
                   ret::Union{DataType,Nothing} = nothing) where N
 
-    push_interface_map!(m, can_type, Contract(can_type, func, args, kwargs, ret))
+    push_interface_map!(m, trait, Contract(trait, func, args, kwargs, ret))
     return nothing
 end
 
 """
-    contracts(module::Module, can_type::DataType)
+    contracts(module::Module, trait::DataType)
 
 Returns a set of [`Contracts`](@ref) that are required to be implemented
-for objects that exihibits the specific `can_type` trait.
+for objects that exihibits the specific `trait`.
 """
-function contracts(m::Module, can_type::DataType)
-    current_contracts = get_interface_values(m, can_type)
-    subcan_types = get_composite_values(m, can_type)
-    if !isempty(subcan_types)
-        contracts_array = contracts.(Ref(m), subcan_types)
+function contracts(m::Module, trait::DataType)
+    current_contracts = get_interface_values(m, trait)
+    subtraits = get_composite_values(m, trait)
+    if !isempty(subtraits)
+        contracts_array = contracts.(Ref(m), subtraits)
         underlying_contracts = union(contracts_array...)
         return union(current_contracts, underlying_contracts)
     else
@@ -70,11 +70,11 @@ end
 """
     make_tuple_type(T::Assignable, c::Contract)
 
-Make a tuple type such that the placeholder (can-type) is replaced
+Make a tuple type such that the placeholder trait is replaced
 with the type `T` that is being checked.
 """
 function make_tuple_type(T::Assignable, c::Contract)
-    args = [t == c.can_type ? T : t for t in c.args]
+    args = [t == c.trait ? T : t for t in c.args]
     return Tuple{args...}
 end
 
@@ -90,29 +90,15 @@ function required_contracts(m::Module, T::Assignable)
 end
 
 """
-    @implement <CanType> by <FunctionSignature>
+    @implement <trait> by <sig>
 
-Register function signature for the specified `CanType` of a trait.
+Register a new interface contract as specified by `sig`
+for the specified `trait`.
+
 You can use the [`@check`](@ref) function to verify your implementation
-after these interface contracts are registered.  The function
-signature only needs to specify required arguments other than
-the object itself.  Also, return type is optional and in that case
-it will be ignored by the interface checker.
-
-For examples:
-```julia
-@implement CanFly by fly(_, direction::Direction, speed::Float64)
-@implement CanFly by has_wings()::Bool
-```
-
-The data types that exhibit those `CanFly` traits must implement
-the function signature with the addition of an object as first
-argument i.e.
-
-```julia
-fly(duck::Duck, direction::Direction, speed::Float64)
-has_wings(duck::Duck)::Bool
-```
+after these interface contracts are registered.  The signature may use
+an underscore to indicate a placeholder for the data type that exihibits
+the trait.  Return type is currently optional and unchecked.
 """
 macro implement(cap, by, sig)
 
@@ -134,9 +120,9 @@ macro implement(cap, by, sig)
 end
 
 # Parsing function for @implement macro
-function parse_implement(cap, by, sig)
+function parse_implement(trait, by, sig)
     usage = "usage: @implement <Type> by <function specification>[::<ReturnType>]"
-    cap isa Expr && sig isa Expr && by === :by || throw(SyntaxError(usage))
+    trait isa Expr && sig isa Expr && by === :by || throw(SyntaxError(usage))
 
     # Is return type specified?
     if sig.head === :(::)
@@ -164,11 +150,11 @@ function parse_implement(cap, by, sig)
     # further arguments after the keyword argument list
     for (idx, x) in enumerate(sig.args[firstarg:end])  # x must be Expr of 1 or 2 symbols
         push!(func_arg_names, extract_name(x, Symbol("x$idx")))
-        push!(func_arg_types, extract_type(x, cap, :(Base.Bottom)))
+        push!(func_arg_types, extract_type(x, trait, :(Base.Bottom)))
     end
 
-    # Check that at least one of the arguments is the can-type
-    if findfirst(x -> x === cap, func_arg_types) === nothing
+    # Check that at least one of the arguments is an underscore, which is mapped to the trait type.
+    if findfirst(x -> x === trait, func_arg_types) === nothing
         throw(SyntaxError("The function signature must have at least 1 underscore."))
     end
 
@@ -193,13 +179,13 @@ function extract_name(x::Expr, default)
     end
 end
 
-# If the symbol is an underscore, replace with the can-type.
+# If the symbol is an underscore, replace with the trait type.
 # Otherwise, just return the default type.
-function extract_type(s::Symbol, can_type, default)
-    return s === :_ ? can_type : default
+function extract_type(s::Symbol, trait, default)
+    return s === :_ ? trait : default
 end
 
-function extract_type(x::Expr, can_type, default)
+function extract_type(x::Expr, trait, default)
     n = length(x.args)
     if x.head == :(::)
         # form: '<name> :: <type-spec>' or ':: <type-spec>'
@@ -208,7 +194,7 @@ function extract_type(x::Expr, can_type, default)
     elseif n >= 1 && x.head == :kw
         # form: '<something> = <rest>'
         # we assume <something> has one of the previous forms and ignore rest
-        extract_type(x.args[1], can_type, default)
+        extract_type(x.args[1], trait, default)
     else
         throw(SyntaxError("@implement")) # will never be called, because extract_name throws
     end

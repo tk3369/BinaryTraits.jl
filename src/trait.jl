@@ -75,7 +75,8 @@ macro trait(trait_type::Symbol, args...)
     end
 
     # If it's composite trait, then I want to maintain a mapping from the
-    # can-type to the underlyings.  It is needed for interface checks.
+    # positive trait type to the underlying's positive trait types.
+    # It is needed for interface checks later.
     composite_expr = if underlying_traits !== nothing
         underlying_types = underlying_traits.args
         quote
