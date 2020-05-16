@@ -7,33 +7,6 @@ it is defined by a statement like `@trait Fly`.
 is_trait(x::DataType) = false
 
 """
-    trait_type_name(t)
-
-Return the name of trait type given a trait `t`.
-For example, it would be `FlyTrait` for a `Fly` trait.
-The trait is expected to be in TitleCase, but this
-function automatically convert the first character to
-upper case regardless.
-"""
-trait_type_name(t) = Symbol(uppercasefirst(string(t)) * "Trait")
-
-"""
-    trait_func_name(t)
-
-Return the name of the trait instropectin function given a trait `t`.
-For example, it would be `flytrait` for a `Fly` trait.
-"""
-trait_func_name(t) = Symbol(lowercase(string(t)) * "trait")
-
-function trait_func_name(mod, t)
-    tn = Symbol(lowercase("$t"))
-    fn = mod.eval(tn)
-    # tn = Symbol(lowercase(string(nameof(sup))))
-    modn = fullname(parentmodule(fn))
-    foldl((a,b) -> Expr(:(.), a, QuoteNode(b)), (modn..., tn))
-end
-
-"""
 Check if `x` is an expression of a tuple of something.
 If `n` is specified then also check whether the tuple
 has `n` elements. The `op` argument is used to customize
