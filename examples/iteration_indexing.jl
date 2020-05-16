@@ -1,4 +1,5 @@
-using Revise, BinaryTraits
+using BinaryTraits
+using BinaryTraits.Prefix: Is, Not
 
 # See https://docs.julialang.org/en/v1/manual/interfaces
 
@@ -6,9 +7,9 @@ using Revise, BinaryTraits
 # Iteration interface
 # -----------------------------------------------------------------------------
 import Base: iterate
-@trait Iterable prefix Is,Not
-@implement IsIterable by iterate(_)::Any
-@implement IsIterable by iterate(_, state::Any)::Any
+@trait Iterable
+@implement Is{Iterable} by iterate(_)::Any
+@implement Is{Iterable} by iterate(_, state::Any)::Any
 
 # Example from https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration-1
 struct Squares
@@ -18,13 +19,13 @@ end
 Base.iterate(S::Squares, state=1) = state > S.count ? nothing : (state*state, state+1)
 
 # Let's assign the Squares type to Iterable
-@assign Squares with IsIterable
+@assign Squares with Is{Iterable}
 @check(Squares)
 #=
 julia> @check(Squares)
 ✅ Squares has implemented:
-1. IterableTrait: IsIterable ⇢ iterate(🔹, ::Any)::Any
-2. IterableTrait: IsIterable ⇢ iterate(🔹)::Any
+1. BinaryTrait{Iterable}: Positive{Iterable} ⇢ iterate(🔹)::Any
+2. BinaryTrait{Iterable}: Positive{Iterable} ⇢ iterate(🔹, ::Any)::Any
 =#
 
 # -----------------------------------------------------------------------------
@@ -32,14 +33,14 @@ julia> @check(Squares)
 # -----------------------------------------------------------------------------
 import Base: getindex, setindex!, firstindex, lastindex
 
-@trait Indexable prefix Is,Not
-@implement IsIndexable by getindex(_, i::Any)
+@trait Indexable
+@implement Is{Indexable} by getindex(_, i::Any)
 
-@trait IndexableFromBeginning prefix Is,Not
-@implement IsIndexableFromBeginning by firstindex(_)
+@trait IndexableFromBeginning
+@implement Is{IndexableFromBeginning} by firstindex(_)
 
-@trait IndexableAtTheEnd prefix Is,Not
-@implement IsIndexableAtTheEnd by lastindex(_)
+@trait IndexableAtTheEnd
+@implement Is{IndexableAtTheEnd} by lastindex(_)
 
 # Make sure that `i` is untyped (i.e. `Any`) to adhere to the contract
 function Base.getindex(S::Squares, i)
@@ -47,34 +48,34 @@ function Base.getindex(S::Squares, i)
     return i*i
 end
 
-@assign Squares with IsIndexable
+@assign Squares with Is{Indexable}
 @check(Squares)
 #=
 julia> @check(Squares)
 ✅ Squares has implemented:
-1. IndexableTrait: IsIndexable ⇢ getindex(🔹, ::Any)::Any
-2. IterableTrait: IsIterable ⇢ iterate(🔹, ::Any)::Any
-3. IterableTrait: IsIterable ⇢ iterate(🔹)::Any
+1. BinaryTrait{Iterable}: Positive{Iterable} ⇢ iterate(🔹)::Any
+2. BinaryTrait{Iterable}: Positive{Iterable} ⇢ iterate(🔹, ::Any)::Any
+3. BinaryTrait{Indexable}: Positive{Indexable} ⇢ getindex(🔹, ::Any)::Any
 =#
 
 # We want to have the traits for indexing from beginning and at the end
-@assign Squares with IsIndexableFromBeginning, IsIndexableAtTheEnd
+@assign Squares with Is{IndexableFromBeginning}, Is{IndexableAtTheEnd}
 @check(Squares)
 #=
 julia> @check(Squares)
 ┌ Warning: Missing implementation
-│   contract = IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(🔹)::Any
+│   contract = BinaryTrait{IndexableFromBeginning}: Positive{IndexableFromBeginning} ⇢ firstindex(🔹)::Any
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
 ┌ Warning: Missing implementation
-│   contract = IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(🔹)::Any
+│   contract = BinaryTrait{IndexableAtTheEnd}: Positive{IndexableAtTheEnd} ⇢ lastindex(🔹)::Any
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
 ✅ Squares has implemented:
-1. IndexableTrait: IsIndexable ⇢ getindex(🔹, ::Any)::Any
-2. IterableTrait: IsIterable ⇢ iterate(🔹, ::Any)::Any
-3. IterableTrait: IsIterable ⇢ iterate(🔹)::Any
+1. BinaryTrait{Iterable}: Positive{Iterable} ⇢ iterate(🔹)::Any
+2. BinaryTrait{Iterable}: Positive{Iterable} ⇢ iterate(🔹, ::Any)::Any
+3. BinaryTrait{Indexable}: Positive{Indexable} ⇢ getindex(🔹, ::Any)::Any
 ❌ Squares is missing these implementations:
-1. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(🔹)::Any
-2. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(🔹)::Any
+1. BinaryTrait{IndexableFromBeginning}: Positive{IndexableFromBeginning} ⇢ firstindex(🔹)::Any
+2. BinaryTrait{IndexableAtTheEnd}: Positive{IndexableAtTheEnd} ⇢ lastindex(🔹)::Any
 =#
 
 # Let's implement them now.
@@ -84,9 +85,9 @@ Base.lastindex(S::Squares) = length(S)
 #=
 julia> @check(Squares)
 ✅ Squares has implemented:
-1. IndexableAtTheEndTrait: IsIndexableAtTheEnd ⇢ lastindex(🔹)::Any
-2. IndexableFromBeginningTrait: IsIndexableFromBeginning ⇢ firstindex(🔹)::Any
-3. IndexableTrait: IsIndexable ⇢ getindex(🔹, ::Any)::Any
-4. IterableTrait: IsIterable ⇢ iterate(🔹, ::Any)::Any
-5. IterableTrait: IsIterable ⇢ iterate(🔹)::Any
+1. BinaryTrait{IndexableFromBeginning}: Positive{IndexableFromBeginning} ⇢ firstindex(🔹)::Any
+2. BinaryTrait{Iterable}: Positive{Iterable} ⇢ iterate(🔹)::Any
+3. BinaryTrait{Iterable}: Positive{Iterable} ⇢ iterate(🔹, ::Any)::Any
+4. BinaryTrait{Indexable}: Positive{Indexable} ⇢ getindex(🔹, ::Any)::Any
+5. BinaryTrait{IndexableAtTheEnd}: Positive{IndexableAtTheEnd} ⇢ lastindex(🔹)::Any
 =#
