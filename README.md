@@ -5,9 +5,10 @@
 [![codecov.io](http://codecov.io/github/tk3369/BinaryTraits.jl/coverage.svg?branch=master)](http://codecov.io/github/tk3369/BinaryTraits.jl?branch=master)
 
 BinaryTraits.jl focuses on usability - traits should be simple to understand and easy to use.
-For that reason, it is designed to be an *opinionated* library and follows certain conventions.
+For that reason, every trait is binary.  An object either has the trait (positive) or does not
+have the trait (negative).
 
-The underlying mechanism is just Holy Traits as explained in my
+The design is heavily influenced by the Holy Traits pattern as explained in my
 [Holy Traits book excerpt](https://ahsmart.com/pub/holy-traits-design-patterns-and-best-practice-book.html)
 as well as in Julia manual's
 [trait-based dispatch section](https://docs.julialang.org/en/v1/manual/methods/#Trait-based-dispatch-1).
@@ -27,16 +28,20 @@ Just a quick example below.  More details can be found
 in our [documentation](https://tk3369.github.io/BinaryTraits.jl/dev).
 
 ```julia
+# Use package and import desired positive/negative trait type aliases
+using BinaryTraits
+using BinaryTraits.Prefix: Can
+
 # Define a trait and its interface contracts
 @trait Fly
-@implement CanFly by fly(_, destination::Location, speed::Float64)
+@implement Can{Fly} by fly(_, destination::Location, speed::Float64)
 
 # Define your data type and implementation
 struct Bird end
 fly(::Bird, destination::Location, speed::Float64) = "Wohoo! Arrived! 🐦"
 
 # Assign your data type to a trait
-@assign Bird with CanFly
+@assign Bird with Can{Fly}
 
 # Verify that your implementation is correct
 @check(Bird)
@@ -45,7 +50,7 @@ fly(::Bird, destination::Location, speed::Float64) = "Wohoo! Arrived! 🐦"
 ## Main Features
 
 The following features have already been implemented.  Additional features are planned
-and logged as [issues in this repo](https://github.com/tk3369/BinaryTraits.jl/issues).
+and logged in the issues list.
 
 * Define traits and assigning them to your own data types
 * Define composite traits that exhibits all of the underlying traits
@@ -55,7 +60,8 @@ and logged as [issues in this repo](https://github.com/tk3369/BinaryTraits.jl/is
 
 ## Credits
 
-* [Klaus Crusius](https://github.com/KlausC) for his ideas and significant contributions to this project
+* [Klaus Crusius](https://github.com/KlausC) for his ideas, articulation, and significant contributions to this project
+* [Jānis Erdmanis](https://github.com/akels) for his proposal of a new design based upon parametric types
 
 ## Related Projects
 
@@ -64,5 +70,6 @@ you, take a look at these others:
 
 * [Traits.jl](https://github.com/schlichtanders/Traits.jl)
 * [SimpleTraits.jl](https://github.com/mauro3/SimpleTraits.jl)
+* [CanonicalTraits.jl](https://github.com/thautwarm/CanonicalTraits.jl)
 * [TraitWrappers.jl](https://github.com/xiaodaigh/TraitWrappers.jl)
 
