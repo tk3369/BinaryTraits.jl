@@ -16,6 +16,7 @@ traits
 istrait
 required_contracts
 inittraits
+set_verbose
 ```
 
 ## Types
