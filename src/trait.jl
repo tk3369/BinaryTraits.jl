@@ -50,7 +50,7 @@ Create a new trait type for `name` called `\$(name)Trait`:
 * If the `with` clause is provided, then it defines a composite trait from existing traits.
 Note that you must specify at least 2 traits to make a composite trait.
 """
-macro trait(trait_type::Symbol, args...)
+macro trait(name::Symbol, args...)
     category, prefixes, underlying_traits = parse_trait_args(args)
     pos, neg = prefixes.args
     mod = __module__
@@ -59,8 +59,8 @@ macro trait(trait_type::Symbol, args...)
     import_prefix_type(mod, pos)
     import_prefix_type(mod, neg)
 
-    this_can_type = Expr(:curly, pos, trait_type)
-    this_cannot_type = Expr(:curly, neg, trait_type)
+    this_can_type = Expr(:curly, pos, name)
+    this_cannot_type = Expr(:curly, neg, name)
 
     # Single traits - the default is "cannot".
     # Composite traits - the default is the AND-expression of all underlyings.
@@ -92,9 +92,9 @@ macro trait(trait_type::Symbol, args...)
     end
 
     expr = quote
-        abstract type $trait_type <: $category end
-        BinaryTraits.trait(::Type{$trait_type}, x::Type) = $default_expr
-        BinaryTraits.is_trait(::Type{$trait_type}) = true
+        abstract type $name <: $category end
+        BinaryTraits.trait(::Type{$name}, x::Type) = $default_expr
+        BinaryTraits.is_trait(::Type{$name}) = true
         $composite_expr
     end
 
