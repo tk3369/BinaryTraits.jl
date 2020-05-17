@@ -162,17 +162,17 @@ module Interfaces
     @trait Pretty
     @implement Is{Pretty} by look_at_the_mirror_daily(_)::Bool
 
-    # Bird satisfies all contracts from FlyTrait by concrete type
+    # Bird satisfies all contracts from Fly trait by concrete type
     liftoff(::Bird) = "hi ho!"
     speed(::Bird, resistence::Float64) = 100 - resistence
     flyto(x::Float64, y::Float64, ::Bird) = "Arrvied at ($x, $y)"
 
-    # Duck satisfies partial contracts from FlyTrait by concrete type
+    # Duck satisfies partial contracts from Fly trait by concrete type
     struct Duck end
     @assign Duck with Can{Fly}
     liftoff(::Duck) = "hi ho!"
 
-    # Chicken does not satisfy any contract from FlyTrait
+    # Chicken does not satisfy any contract from Fly trait
     struct Chicken end
     @assign Chicken with Can{Fly}
 
@@ -187,7 +187,7 @@ module Interfaces
     # Test composite traits - total underlying 4 contracts required for this!
     @trait FlyPretty with Can{Fly}, Is{Pretty}
 
-    # Crane partially satisfies FlyTrait and fully satisfies Pretty trait
+    # Crane partially satisfies Fly trait and fully satisfies Pretty trait
     struct Crane end
     @assign Crane with Is{FlyPretty}
     speed(::Crane, resistence::Float64) = 150 - resistence
@@ -296,7 +296,7 @@ module Interfaces
             show(buf, duck_check)
             @test buf |> take! |> String |> contains("is missing")
 
-            # Bird is assigned with 1 FlyTrait and that requires 3 contracts
+            # Bird is assigned with 1 Fly trait and that requires 3 contracts
             @test required_contracts(mod, Bird) |> length == 3
 
             # Crane requires 4 contracts because it has both Fly and Pretty traits

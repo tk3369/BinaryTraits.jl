@@ -1,8 +1,13 @@
 ## Traits
 
-A trait is defined as an abstract type that is used as the
-type parameter of several pre-defined types - `BinaryTrait`,
-`Positive`, and `Negative`.
+A trait is defined as an abstract type that is used in the
+parametric types `BinaryTrait`, `Positive`, and `Negative`.
+You may assign any data type to the positive/negative trait
+type.
+
+For the sake of readability, there
+are predefined aliases to `Positive` and `Negative` types.
+For example, `Can` is the same type as `Positive`.
 
 ![defining traits](assets/concept_defining_traits.png)
 

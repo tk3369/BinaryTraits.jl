@@ -6,12 +6,13 @@ You can define a new trait using the `@trait` macro.
 The syntax is described below:
 
 ```julia
-@trait <Trait> [as <Category>] [prefix <Can>,<Cannot>] [with <Trait1>,<Trait2>,...]
+@trait <TraitName> [as <SuperType>] [prefix <Can>,<Cannot>] [with <Trait1>,<Trait2>,...]
 ```
 
-* `<Trait>` will be defined as a data type with an optional super-type `Category`
-* `<Can>` and `<Cannot>` are words that indicates whether a data type exhibits the trait.
-* `<Trait1>`, `<Trait2>`, etc. are used to define composite traits.
+* `<TraitName>`: an abstract type is defined with the same name
+* `<SuperType>`: optional super-type of the trait's abstract type
+* `<Can>` and `<Cannot>`: words that indicate whether a data type exhibits the trait or not
+* `<Trait1>`, `<Trait2>`, etc. can be specified to define composite traits.
 
 The as-clause, prefix-clause, and with-clause are all optional.
 
@@ -39,7 +40,21 @@ For example:
 @trait Iterable prefix Is,Not
 ```
 
-This should make your code a lot more readable.
+Alternative, there are predefined trait prefixes from the BinaryTraits.Prefix sub-module.
+They are listed below for your convenience:
+
+Trait prefixes as aliases of `Positive`:
+- Can
+- Has
+- Is
+
+Traits prefixes as aliases of `Negative`:
+- Cannot
+- No
+- Not
+- IsNot
+
+You may just import the pre-defined prefixes as you see fit.  The prefixes are
 
 ### Making composite traits
 
@@ -53,13 +68,20 @@ for dispatch.  In that case, we can just use the with-clause like this:
 This above syntax would define a new trait where it assumes the
 positive side of the traits `Fly` and `Swim`.
 
+A less common usage is to create trait types can is composed of both
+positive and negative traits.  Hence, you can define something like this:
+
+```julia
+@trait SeaCreature with Can{Swim},Cannot{Fly}
+```
+
 ## Assigning traits to types
 
 Once you define your favorite traits, you may assign any data type to any traits.
 The syntax of the assignment is as follows:
 
 ```julia
-@assign <DataType> with <TraitSide1>,<TraitSide2>,...
+@assign <Type> with <Trait1>,<Trait2>,...
 ```
 
 You can assign a data type with 1 or more positive (or negative) trait types
@@ -75,10 +97,10 @@ in the next section.
 
 ## Specifying interfaces
 
-A useful feature of traits is to define formal interfaces.  Currently, Julia does not
+A ver useful feature of BinaryTraits is to define formal interfaces.  Currently, Julia does not
 come with any facility to specify interface contracts.  The users are expected to
 look up interface definitions from documentations and make sure that they implement
-those contracts per documentation.
+those contracts per documentation accordingly.
 
 This package provides additional machinery for users to formally define interfaces.
 It also comes with a macro for verifying the validity of data
@@ -87,7 +109,7 @@ type implementations.
 ### Formal interface contracts
 
 Once you have defined a trait, you may define a set of interface contracts that a
-data type must implement in order to carry that trait.  These contracts are registered
+data type must implement in order to exhibit that trait.  These contracts are registered
 in the BinaryTraits system using the `@implement` macro.
 The syntax of `@implement` is as follows:
 
@@ -145,9 +167,9 @@ we can implement the following contracts:
 ```julia
 abstract type Animal end
 struct Bird <: Animal end
-@assign Bird with CanFly
+@assign Bird with Can{Fly}
 
-# implmementation of CanFly contracts
+# implmementation of Can{Fly} contracts
 liftoff(bird::Bird) = "Hoo hoo!"
 fly(bird::Bird, direction::Float64, altitude::Float64) = "Getting there!"
 speed(bird::Bird) = 10.0
