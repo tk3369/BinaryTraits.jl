@@ -9,7 +9,7 @@ The syntax is described below:
 @trait <Trait> [as <Category>] [prefix <Can>,<Cannot>] [with <Trait1>,<Trait2>,...]
 ```
 
-* A trait type `<Trait>Trait` will be automatically defined
+* `<Trait>` will be defined as a data type with an optional super-type `Category`
 * `<Can>` and `<Cannot>` are words that indicates whether a data type exhibits the trait.
 * `<Trait1>`, `<Trait2>`, etc. are used to define composite traits.
 
@@ -39,12 +39,6 @@ For example:
 @trait Iterable prefix Is,Not
 ```
 
-In this case, the following types will be defined instead:
-```
-IsIterable
-NotIterable
-```
-
 This should make your code a lot more readable.
 
 ### Making composite traits
@@ -53,18 +47,11 @@ Sometimes we really want to compose traits and use a single one directly
 for dispatch.  In that case, we can just use the with-clause like this:
 
 ```julia
-@trait FlySwim with CanFly,CanSwim
+@trait FlySwim with Can{Fly}, Can{Swim}
 ```
 
 This above syntax would define a new trait where it assumes the
-sub-traits `Fly` and `Swim`.  Then, we can just apply the Holy Trait
-pattern as usual:
-
-```julia
-spank(x) = spank(flyswimtrait(x), x)
-spank(::CanFlySwim, x) = "Flying high and diving deep"
-spank(::CannotFlySwim, x) = "Too Bad"
-```
+positive side of the traits `Fly` and `Swim`.
 
 ## Assigning traits to types
 
@@ -72,22 +59,19 @@ Once you define your favorite traits, you may assign any data type to any traits
 The syntax of the assignment is as follows:
 
 ```julia
-@assign <DataType> with <CanTraitType1>,<CanTraitType2>,...
+@assign <DataType> with <TraitSide1>,<TraitSide2>,...
 ```
 
-You can assign a data type with 1 or more can-trait types in a single statement:
+You can assign a data type with 1 or more positive (or negative) trait types
+in a single statement:
 
 ```julia
 struct Crane end
-@assign Crane with CanFly,CanSwim
+@assign Crane with Can{Fly},Can{Swim}
 ```
 
-Doing that is pretty much equivalent to defining these functions:
-
-```julia
-flytrait(::Crane) = CanFly()
-swimtrait(::Crane) = CanSwim()
-```
+Doing such assignment allows us to enforce interface contracts as you will see
+in the next section.
 
 ## Specifying interfaces
 
@@ -108,27 +92,33 @@ in the BinaryTraits system using the `@implement` macro.
 The syntax of `@implement` is as follows:
 
 ```julia
-@implement <CanType> by <FunctionSignature>
+@implement Positive{<Trait>} by <FunctionSignature>
+@implement Negative{<Trait>} by <FunctionSignature>
 ```
 
-The value of `<CanType>` is the positive side of a trait e.g. `CanFly`, `IsIterable`,
-etc.  The `<FunctionSignature>` is basically a standard function signature.
+In general, the first form is what one normally use.  You are basically telling the
+system that a data type that exhibits the `Trait` must implement a function that is
+given the the `<FunctionSignature>`.
 
-The followings are all valid usages:
+The words `Positive` and `Negative` are the standard parametric types
+for specifying the direction of the trait.  Alternatively, you may use the custom prefixes
+that you defined from the `@trait` macro.
+
+Here are some examples:
 
 ```julia
-@implement CanFly by liftoff(_)
-@implement CanFly by fly(_, direction::Float64, altitude::Float64)
-@implement CanFly by speed(_)::Float64
+@implement Can{Fly} by liftoff(_)
+@implement Can{Fly} by fly(_, direction::Float64, altitude::Float64)
+@implement Can{Fly} by speed(_)::Float64
 ```
+
+The underscore `_` is a special syntax where you can indicate which positional
+argument you want to pass an object to the function.  The object is expected
+to have a type that is assigned to the `Fly` trait.
 
 When return type is not specified, it is default to `Any`.
 Return type is currently not validated so it could be used here
 just for documentation purpose.
-
-The underscore `_` is a special syntax where you can indicate which positional
-argument you want to pass an object to the function.  The object is expected
-to have a type that is assigned to the Fly trait.
 
 !!! note
     The underscore may be placed at any argument position although it is
@@ -140,8 +130,8 @@ to have a type that is assigned to the Fly trait.
     `Playful` trait and a `play(_, _)` interface expects an implementation
     of `play(::Duck, ::Duck)`.
 
-It is also possible to use the negative part of the trait e.g. `CannotFly`
-for interface specification.
+Although not as common, it is also possible to use the negative part
+of the trait e.g. `Cannot{Fly}` for interface specification.
 
 ### Implementing interface contracts
 
@@ -168,9 +158,9 @@ What if you have multiple types that satisfy the same trait.
 Holy Trait comes to rescue:
 
 ```julia
-liftoff(x::Animal) = liftoff(flytrait(x), x)
-liftoff(::CanFly, x) = "Hi ho!"
-liftoff(::CannotFly, x) = "Hi ho!"
+liftoff(x::T) where {T <: Animal} = liftoff(trait(Fly, T), x)
+liftoff(::Can{Fly}, x) = "Hi ho!"
+liftoff(::Cannot{Fly}, x) = "baaa!"
 ```
 
 ### Validating a type against its interfaces
@@ -198,8 +188,8 @@ to clearly show you what has been implemented and what's not.
 !!! note
     When you define composite traits, all contracts from the underlying traits must be
     implemented as well.  If you have a `FlySwim` trait, then all contracts specified
-    for `CanFly` and `CanSwim` are required even though you have not added any new
-    contracts for `CanFlySwim`.
+    for `Can{Fly}` and `Can{Swim}` are required even though you have not added any new
+    contracts for `Can{FlySwim}`.
 
 !!! note
     One way to utilize the `@check` macro is to put that in your module's `__init__` function
@@ -221,7 +211,7 @@ code in its `__init__` function:
 
 ```julia
 function __init__()
-    inittraits(@__MODULE__)
+    init_traits(@__MODULE__)
 end
 ```
 
@@ -234,3 +224,4 @@ The ability to design software with traits and interfaces and the ability to ver
 software for conformance to established interface contracts are highly desirable for
 professional software development projects. BinaryTraits is designed to fill the
 language gap as related to the lack of a formal traits and interface system.
+

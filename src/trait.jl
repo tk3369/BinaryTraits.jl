@@ -1,6 +1,42 @@
 
 const DEFAULT_TRAIT_SUPERTYPE = Any
 
+export trait
+
+abstract type BinaryTrait{T} end
+
+# This sub-module is used to keep standard prefix types
+module Prefix
+    import ..BinaryTraits
+    using ..BinaryTraits: BinaryTrait
+
+    # default types for both sides
+    struct Positive{T} <: BinaryTrait{T} end
+    struct Negative{T} <: BinaryTrait{T} end
+
+    # Positive/Negative trait types are traits
+    BinaryTraits.is_trait(::Type{Positive{T}}) where T = true
+    BinaryTraits.is_trait(::Type{Negative{T}}) where T = true
+
+    # Optional positive types that may be brought into user module namespace
+    const Can = Positive
+    const Has = Positive
+    const Is = Positive
+
+    # Optional negative types that may be brought into user module namespace
+    const Cannot = Negative
+    const IsNot = Negative
+    const No = Negative
+    const Not = Negative
+end
+
+"""
+    trait(::Type{T}, x)
+
+Returns the singleton positive/negative trait type for object `x`.
+"""
+function trait end
+
 # -----------------------------------------------------------------------------
 
 """
@@ -19,54 +55,49 @@ macro trait(name::Symbol, args...)
     pos, neg = prefixes.args
     mod = __module__
 
-    trait_type = trait_type_name(name)
-    this_can_type = Symbol("$(pos)$(name)")
-    this_cannot_type = Symbol("$(neg)$(name)")
-    lower_name = lowercase(String(name))
+    # Try to import the predefined prefix types to user module's namespace
+    import_prefix_type(mod, pos)
+    import_prefix_type(mod, neg)
 
-    # The default is "cannot".  But if it's a composite trait, then the
-    # default is "can" only when all of it's underlying traits are also "can".
-    default_trait_function = trait_func_name(name)
+    this_can_type = Expr(:curly, pos, name)
+    this_cannot_type = Expr(:curly, neg, name)
+
+    # Single traits - the default is "cannot".
+    # Composite traits - the default is the AND-expression of all underlyings.
     default_expr = if underlying_traits !== nothing
-        # Construct something like: flytrait(x) === CanFly() && swimtrait(x) === CanSwim()
-        traits_func_names = [trait_func_name(mod, sym) for sym in underlying_traits.args]
-        traits_can_types  = underlying_traits.args
+        # Composite trait here:
+        # Construct something like: trait(Fly,x) === Can{Fly}() && trait(Swim,x) === Can{Swim}()
         condition =
             Expr(:(&&),
-                [Expr(:call, :(===), Expr(:call, f, :x), Expr(:call, g))
-                        for (f,g) in zip(traits_func_names, traits_can_types)]...)
-
+                [let cap = t.args[1], trait = t.args[2]
+                    :( BinaryTraits.trait($trait, x) === $(cap){$trait}())
+                 end for t in underlying_traits.args]...)
         # Construct expression like: [condition] ? CanFlySwim() : CannotFlySwim()
         Expr(:if, condition, Expr(:call, this_can_type), Expr(:call, this_cannot_type))
     else
-        # The default is "cannot" for every type
+        # Single trait here: default to "cannot" for every type
         Expr(:call, this_cannot_type)
     end
 
     # If it's composite trait, then I want to maintain a mapping from the
-    # can-type to the underlying's can-types.  It is needed for interface checks.
+    # positive trait type to the underlying's positive trait types.
+    # It is needed for interface checks later.
     composite_expr = if underlying_traits !== nothing
-        traits_can_types = underlying_traits.args
-        quote 
-        BinaryTraits.push_composite_map!($mod, $this_can_type, Set([$(traits_can_types...)]))
+        underlying_types = underlying_traits.args
+        quote
+            BinaryTraits.push_composite_map!($mod, $this_can_type, Set([$(underlying_types...)]))
         end
     else
         nothing
     end
 
-    prefixes = (pos, neg)
-    name_node = QuoteNode(name)
-
     expr = quote
-        abstract type $trait_type <: $category end
-        struct $this_can_type <: $trait_type end
-        struct $this_cannot_type <: $trait_type end
-        $(default_trait_function)(x::Any) = $default_expr
-
-        BinaryTraits.istrait(::Type{$trait_type}) = true
-
+        abstract type $name <: $category end
+        BinaryTraits.trait(::Type{$name}, x::Type) = $default_expr
+        BinaryTraits.is_trait(::Type{$name}) = true
         $composite_expr
     end
+
     display_expanded_code(expr)
     return esc(expr)
 end
@@ -77,7 +108,7 @@ Parse arguments for the @trait macro.
 function parse_trait_args(args)
 
     category = Symbol(DEFAULT_TRAIT_SUPERTYPE)
-    prefixes = Expr(:tuple, :Can, :Cannot)
+    prefixes = Expr(:tuple, :Positive, :Negative)
     traits = nothing
 
     usage = "Invalid @trait usage. See doc string for details."
@@ -97,10 +128,28 @@ function parse_trait_args(args)
 
     if length(args) > 0 && args[1] == :with
         traits =  args[2]
-        (traits isa Symbol || is_tuple_of_symbols(traits; n = 2, op = >=)) ||
+        (traits isa Symbol || is_tuple_of_curly_expressions(traits; n = 2, op = >=)) ||
             throw(SyntaxError(usage))
         args = args[3:end]
     end
 
     return (category, prefixes, traits)
+end
+
+"""
+    import_prefix_type(m::Module, prefix::Symbol)
+
+Import predefined prexies `prefix` from BinaryTraits.Prefix module into
+the specified module `m`. If the name is already bounded with a different value
+in the module, an error is raised.
+"""
+function import_prefix_type(m::Module, prefix::Symbol)
+    existing_names = names(m, all = true, imported = true)
+    try
+        prefix_type = Base.eval(m, prefix)
+        parentmodule(prefix_type) == BinaryTraits.Prefix ||
+            error("Unable to import prefix `$prefix` as it already exists in module $m")
+    catch
+        Base.eval(m, :(import BinaryTraits.Prefix: $prefix))
+    end
 end

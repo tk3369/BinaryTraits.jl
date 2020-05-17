@@ -10,17 +10,17 @@ const Assignable = Union{UnionAll, DataType}
     Contract{T <: DataType, F <: Function, N}
 
 A contract refers to a function defintion `func` that is required to satisfy
-the Can-type of a trait. The function `func` must accepts `args` and returns `ret`.
+a trait. The function `func` must accepts `args` and returns `ret`.
 
 # Fields
-- `can_type`: can-type of a trait e.g. `CanFly`
+- `trait`: a trait type e.g. `Can{Fly}` or `Cannot{Fly}`
 - `func`: function that must be implemented to satisfy this trait
 - `args`: argument types of the function `func`
 - `kwargs`: keyword argument names of the function `func`
 - `ret`: return type of the function `func`
 """
 struct Contract{T <: DataType, F <: Function}
-    can_type::T
+    trait::T
     func::F
     args::Tuple
     kwargs::Tuple
@@ -28,15 +28,15 @@ struct Contract{T <: DataType, F <: Function}
 end
 
 function Base.show(io::IO, c::Contract)
-    # prefix the can-type with a different symbol because it's not subtype relation
-    args = [x == c.can_type ? "🔹" : "::$x" for x in c.args]
+    # Represent the trait type with a special symbol
+    args = [x == c.trait ? "🔹" : "::$x" for x in c.args]
     args = string("(", join(args, ", "))
     if length(c.kwargs) > 0
         args = string(args, "; ", join(c.kwargs, ", "))
     end
     args = string(args, ")")
-    trait = supertype(c.can_type)
-    print(io, "$(trait): $(c.can_type) ⇢ $(c.func)$(args)")
+    trait = supertype(c.trait)
+    print(io, "$(trait): $(c.trait) ⇢ $(c.func)$(args)")
     c.ret !== nothing && print(io, "::$(c.ret)")
 end
 
@@ -92,23 +92,24 @@ const MyDict = VERSION < v"1.2.0" ? Dict : IdDict
 """
     TraitsMap
 
-Map a data type to the Can-type of its assigned traits.
-For example, `Dog => Set([CanSwim, CanRun])`.
+Map a data type to the its assigned traits.
+For example, `Dog => Set([Can{Swim}, Can{Run}, Cannot{Fly}])`.
 """
 const TraitsMap = MyDict{Assignable,Set{DataType}}
 
 """
     InterfaceMap
 
-Map a Can-type to a set of interface contracts.  See [`Contract`](@ref).
+Map a trait to a set of interface contracts.  See [`Contract`](@ref).
 """
 const InterfaceMap = MyDict{DataType,Set{Contract}}
 
 """
     CompositeTraitMap
 
-Maps a composite can-type to a set of its underlying can-types.
-e.g. `CanFlySwim => Set([CanFly, CanSwim])`.
+Maps a composite positive trait type to a set of its underlying traits,
+which could be positive or negative.
+e.g. `Is{Fish} => Set([Can{Swim}, Cannot{Fly}])`.
 """
 const CompositeTraitMap = MyDict{DataType,Set{DataType}}
 

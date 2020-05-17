@@ -1,56 +1,37 @@
 """
-    istrait(x)
+    is_trait(x)
 
-Return `true` if x is a trait type e.g. `FlyTrait` is a trait type when
-it is defined by a statement like `@trait Fly`.
+Return `true` if x is a trait type.
 """
-istrait(x::DataType) = false
-
-"""
-    trait_type_name(t)
-
-Return the name of trait type given a trait `t`.
-For example, it would be `FlyTrait` for a `Fly` trait.
-The trait is expected to be in TitleCase, but this
-function automatically convert the first character to
-upper case regardless.
-"""
-trait_type_name(t) = Symbol(uppercasefirst(string(t)) * "Trait")
+is_trait(x::DataType) = false
 
 """
-    trait_func_name(t)
-
-Return the name of the trait instropectin function given a trait `t`.
-For example, it would be `flytrait` for a `Fly` trait.
-"""
-trait_func_name(t) = Symbol(lowercase(string(t)) * "trait")
-
-function trait_func_name(mod, t)
-    sup = supertype(mod.eval(t))
-    tn = Symbol(lowercase(string(nameof(sup))))
-    modn = fullname(parentmodule(sup))
-    foldl((a,b) -> Expr(:(.), a, QuoteNode(b)), (modn..., tn))
-end
-
-"""
-Check if `x` is an expression of a tuple of symbols.
+Check if `x` is an expression of a tuple of something.
 If `n` is specified then also check whether the tuple
 has `n` elements. The `op` argument is used to customize
 the check against `n`. Use `>=` or `<=` to check min/max
 constraints.
 """
-function is_tuple_of_symbols(x; n = nothing, op = isequal)
-    x isa Expr &&
-    x.head == :tuple &&
-    all(x -> x isa Symbol, x.args) &&
-    (n === nothing || op(length(x.args), n))
+function is_tuple_of_something(x, checker; n = nothing, op = isequal)
+    return x isa Expr &&
+           x.head == :tuple &&
+           all(checker, x.args) &&
+           (n === nothing || op(length(x.args), n))
+end
+
+function is_tuple_of_curly_expressions(x; kwargs...)
+    return is_tuple_of_something(x, x -> x isa Expr && x.head == :curly; kwargs...)
+end
+
+function is_tuple_of_symbols(x; kwargs...)
+    return is_tuple_of_something(x, x -> x isa Symbol; kwargs...)
 end
 
 """
     display_expanded_code(expr::Expr)
 
 Display the expanded code from a macro for debugging purpose.
-Only works when the verbose flag is set using `set_verbose`.
+Only works when the verbose flag is set using `set_verbose!`.
 """
 function display_expanded_code(expr::Expr)
     if VERBOSE[]
@@ -97,7 +78,7 @@ Try first local (module-) table, if key not found use global table.
 """
 function getvalues(mod::Module, sym::Symbol, key)
     st = get_local_storage(mod)
-    if st != nothing
+    if st !== nothing
         tab = getproperty(st, sym)
         haskey(tab, key) && return tab[key]
     end
@@ -161,19 +142,19 @@ function move_to_global!(mod::Module)
 end
 
 """
-    inittraits(module::Module)
+    init_traits(module::Module)
 
-This function should be called like `inittraits(@__MODULE__)` inside the
+This function should be called like `init_traits(@__MODULE__)` inside the
 `__init__()' method of each module using `BinaryTraits`.
 
 Alternatively it can be called outside the module this way:
-`using Module; inittraits(Module)`, if `Module` missed to call it
+`using Module; init_traits(Module)`, if `Module` missed to call it
 within its `__init__` function.
 
 This is required only if the traits/interfaces are expected to be shared
 across modules.
 """
-function inittraits(mod::Module)
+function init_traits(mod::Module)
     move_to_global!(mod)
 end
 

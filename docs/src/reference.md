@@ -13,9 +13,10 @@ that you should be aware of.
 
 ```@docs
 traits
-istrait
+is_trait
 required_contracts
-inittraits
+init_traits
+set_verbose!
 ```
 
 ## Types

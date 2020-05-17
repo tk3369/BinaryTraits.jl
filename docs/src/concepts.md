@@ -1,19 +1,22 @@
 ## Traits
 
-Shen a trait is defined, several data types are automatically declared.
-The parent type always has `Trait` append to the end of the trait's
-name.  The subtypes include the so-called *can-trait type* and
-*cannot-trait type*.  You may realize this is a common type hierarchy
-structure used by the Holy Traits pattern.
+A trait is defined as an abstract type that is used as the
+type parameter of several pre-defined types - `BinaryTrait`,
+`Positive`, and `Negative`.
 
-Let's take a look at an example:
-
-![](assets/concept_fly_trait.png)
+![defining traits](assets/concept_defining_traits.png)
 
 ## Interface Contracts
 
-It should be a common practice to associate a can-trait type with
-a set of interface contracts.  So any
-data type that exhibits the trait should define those functions.
+The positive side of a trait is usually associated with a set
+of interface contracts.
 
-![](assets/concept_fly_contracts.png)
+![interface contracts](assets/concept_interface_contracts.png)
+
+## Composite Traits
+
+A composite trait is one that exhibits the characteristics of all
+of its underlying traits.  The underlying interface contracts
+are applicable as well.
+
+![composite traits](assets/concept_composite_traits.png)
