@@ -223,8 +223,9 @@ to clearly show you what has been implemented and what's not.
 BinaryTraits is designed to allow one module to define traits and interfaces and
 have other modules implementing them.  For example, it should be possible for
 [Tables.jl](https://github.com/JuliaData/Tables.jl) to define traits for
-row tables and column tables and required interface functions, and have
-all of its [integrations](https://github.com/JuliaData/Tables.jl/blob/master/INTEGRATIONS.md)
+row-oriented tables and column-oriented tables and the respective required
+interface functions, and then have its
+[integrations](https://github.com/JuliaData/Tables.jl/blob/master/INTEGRATIONS.md)
 participate in the same traits system.
 
 In order to facilitate interaction between modules, BinaryTraits requires the
@@ -237,8 +238,10 @@ function __init__()
 end
 ```
 
-This additional steps allows all packages that utilize BinaryTraits to register
+This additional step allows framework provider to register
 their traits and interface contracts at a central location.
+The integration packages can then verify their implementation against
+the interface at this same location.
 
 ## Summary
 
