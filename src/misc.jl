@@ -3,7 +3,7 @@
 const VERBOSE = Ref(false)
 
 """
-    set_verbose!(::Bool)
+    set_verbose!(flag::Bool)
 
 For debugging - set flag to print macro expansions
 """

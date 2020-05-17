@@ -7,7 +7,8 @@ type.
 
 For the sake of readability, there
 are predefined aliases to `Positive` and `Negative` types.
-For example, `Can` is the same type as `Positive`.
+For example, `Can` is the same type as `Positive`.  See
+[Using custom prefixes](@ref) for more information.
 
 ![defining traits](assets/concept_defining_traits.png)
 

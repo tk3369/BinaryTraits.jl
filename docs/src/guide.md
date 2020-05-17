@@ -44,15 +44,15 @@ Alternative, there are predefined trait prefixes from the BinaryTraits.Prefix su
 They are listed below for your convenience:
 
 Trait prefixes as aliases of `Positive`:
-- Can
-- Has
-- Is
+- `Can`
+- `Has`
+- `Is`
 
 Traits prefixes as aliases of `Negative`:
-- Cannot
-- No
-- Not
-- IsNot
+- `Cannot`
+- `No`
+- `Not`
+- `IsNot`
 
 You may just import the pre-defined prefixes as you see fit.  The prefixes are
 
