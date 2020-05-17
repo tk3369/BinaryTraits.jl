@@ -23,19 +23,21 @@ abstract type Ability end
 Consider the following animal types. We can assign them traits quite easily:
 
 ```julia
+using BinaryTraits.Prefix: Can, Cannot       # use custom trait prefixes
+
 struct Dog end
 struct Duck end
-@assign Dog with CanSwim
-@assign Duck with CanSwim,CanFly
+@assign Dog with Can{Swim}
+@assign Duck with Can{Swim},Can{Fly}
 ```
 
 Next, how do you dispatch by traits?  Just follow the Holy Trait pattern:
 
 ```julia
-tickle(x) = tickle(flytrait(x), swimtrait(x), x)
-tickle(::CanFly, ::CanSwim, x) = "Flying high and diving deep"
-tickle(::CanFly, ::CannotSwim, x) = "Flying away"
-tickle(::Ability, ::Ability, x) = "Stuck laughing"
+tickle(x::T) where T = tickle(trait(Fly, T), trait(Swim, T), x)
+tickle(::Can{Fly}, ::Can{Swim}, x) = "Flying high and diving deep"
+tickle(::Can{Fly}, ::Cannot{Swim}, x) = "Flying away"
+tickle(::BinaryTrait{Fly}, ::BinaryTrait{Swim}, x) = "Stuck laughing"
 ```
 
 *Voila!*
@@ -54,7 +56,7 @@ What if we want to enforce an interface? e.g. animals that can fly must
 implement a `fly` method.  We can define that interface as follows:
 
 ```julia
-@implement CanFly by fly(_, direction::Float64, altitude::Float64)
+@implement Can{Fly} by fly(_, direction::Float64, altitude::Float64)
 ```
 
 The underscore character is used to indicate how an object should be passed
@@ -66,10 +68,10 @@ macro as shown below:
 ```julia
 julia> @check(Duck)
 ┌ Warning: Missing implementation
-│   contract = FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
+│   contract = BinaryTrait{Fly}: Positive{Fly} ⇢ fly(🔹, ::Float64, ::Float64)::Any
 └ @ BinaryTraits ~/.julia/dev/BinaryTraits.jl/src/interface.jl:59
 ❌ Duck is missing these implementations:
-1. FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
+1. BinaryTrait{Fly}: Positive{Fly} ⇢ fly(🔹, ::Float64, ::Float64)::Any
 ```
 
 Now, let's implement the method and check again:
@@ -79,7 +81,7 @@ julia> fly(duck::Duck, direction::Float64, altitude::Float64) = "Having fun!"
 
 julia> @check(Duck)
 ✅ Duck has implemented:
-1. FlyTrait: CanFly ⇢ fly(🔹, ::Float64, ::Float64)::Any
+1. BinaryTrait{Fly}: Positive{Fly} ⇢ fly(🔹, ::Float64, ::Float64)::Any
 ```
 
 ## Applying Holy Traits
@@ -93,12 +95,12 @@ for `Duck` as shown in the previous section, we could have implemented the follo
 functions instead:
 
 ```julia
-fly(x, direction::Float64, altitude::Float64) = fly(flytrait(x), x, direction, altitude)
-fly(::CanFly, x, direction::Float64, altitude::Float64) = "Having fun!"
-fly(::CannotFly, x, direction::Float64, altitude::Float64) = "Too bad..."
+fly(x::T, direction::Float64, altitude::Float64) where T = fly(trait(Fly, T), x, direction, altitude)
+fly(::Can{Fly}, x, direction::Float64, altitude::Float64) = "Having fun!"
+fly(::Cannot{Fly}, x, direction::Float64, altitude::Float64) = "Too bad..."
 ```
 
-The first function determines whether the object exhibits `CanFly` or `CannotFly` trait
+The first function determines whether the object exhibits `Can{Fly}` or `Cannot{Fly}` trait
 and dispatch to the proper function. We did not specify the type of the `x` argument
 but in reality if we are dealing with the animal kingdom only then we can define an
-abstract type `Animal` and apply holy traits to all `Animal` objects only.
+abstract type `Animal` and qualify that in there where-clause as in `where {T <: Animal>}`.

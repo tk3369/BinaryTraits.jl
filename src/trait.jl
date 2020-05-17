@@ -72,7 +72,7 @@ macro trait(name::Symbol, args...)
                 [let cap = t.args[1], trait = t.args[2]
                     :( BinaryTraits.trait($trait, x) === $(cap){$trait}())
                  end for t in underlying_traits.args]...)
-        # Construct expression like: [condition] ? CanFlySwim() : CannotFlySwim()
+        # Construct expression like: [condition] ? Can{FlySwim}() : Cannot{FlySwim}()
         Expr(:if, condition, Expr(:call, this_can_type), Expr(:call, this_cannot_type))
     else
         # Single trait here: default to "cannot" for every type
