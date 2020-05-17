@@ -242,8 +242,9 @@ their traits and interface contracts at a central location.
 
 ## Summary
 
+BinaryTraits is designed to fill the language gap as related to the lack of a
+formal traits and interface system.
+
 The ability to design software with traits and interfaces and the ability to verify
 software for conformance to established interface contracts are highly desirable for
-professional software development projects. BinaryTraits is designed to fill the
-language gap as related to the lack of a formal traits and interface system.
-
+professional software development projects.

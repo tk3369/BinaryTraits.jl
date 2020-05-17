@@ -84,7 +84,7 @@ julia> @check(Duck)
 1. BinaryTrait{Fly}: Positive{Fly} ⇢ fly(🔹, ::Float64, ::Float64)::Any
 ```
 
-## Applying Holy Traits
+## Applying Holy Traits Pattern
 
 If we would just implement interface contracts directly on concrete types then it can
 be too specific for what it is worth.  If we have 100 flying animals, we shouldn't need to define
