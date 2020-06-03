@@ -11,7 +11,7 @@ function register(m::Module,
                   func::Function,
                   args::Tuple,
                   kwargs::NTuple{N,Symbol},
-                  ret::Union{DataType,Nothing} = nothing) where N
+                  ret::Type = Any) where N
 
     push_interface_map!(m, trait, Contract(trait, func, args, kwargs, ret))
     return nothing
@@ -50,21 +50,43 @@ function check(m::Module, T::Assignable)
     all_good = true
     implemented_contracts = Contract[]
     missing_contracts = Contract[]
+    miss_reasons = String[]
     for contract in required_contracts(m, T)
         tuple_type = make_tuple_type(T, contract)
         method_exists = has_method(contract.func, tuple_type, contract.kwargs)
-        if method_exists
+        return_type_matched = has_proper_return_type(contract.func, tuple_type, contract.ret)
+        if method_exists && return_type_matched
             push!(implemented_contracts, contract)
         else
-            @warn "Missing implementation" contract
+            reason = !method_exists ? "Missing implementation" : "Improper return type"
+            @warn reason contract
+
             all_good = false
             push!(missing_contracts, contract)
+            push!(miss_reasons, reason)
         end
     end
     return InterfaceReview(data_type = T,
                            result = all_good,
                            implemented = implemented_contracts,
-                           misses = missing_contracts)
+                           misses = missing_contracts,
+                           miss_reasons = miss_reasons)
+end
+
+"""
+    has_proper_return_type(f::Base.Callable, arg_types::Tuple, expected::Type)
+
+Return `true` if calling `f` with arguments with types `arg_types` would return the
+`expected` type or a subtype of `expected`.
+
+!!! note
+    Return type check is contra-variant, so the possible return types returned from
+    `Base.return_types` must be a subtype of `expected` in order to
+    satisfy this check.
+"""
+function has_proper_return_type(f::Base.Callable, arg_types::Type{T}, expected::Type) where T <: Tuple
+    possible_return_types = Base.return_types(f, arg_types)
+    return any(T <: expected for T in possible_return_types)
 end
 
 """
