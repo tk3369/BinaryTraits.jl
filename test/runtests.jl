@@ -10,5 +10,5 @@ using Test
     include("test_parametric_type.jl")
     include("test_cross_module.jl")
     include("test_interfaces.jl")
-    include("test_return_types.jl")
+    VERSION >= v"1.1" && include("test_return_types.jl")
 end

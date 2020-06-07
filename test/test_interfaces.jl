@@ -135,6 +135,7 @@ speed(::Hawk, ::Float64) = 64                  # bad, because contract says Floa
 flyto(::Float64, ::Float64, ::Hawk) = "Paris"  # good, because contract says String
 
 function test_hawk_return_type()
+    VERSION < v"1.1" && return                 # skip test for v1.0
     result = @check(Hawk)
     @test result.result == false
     @test result.implemented |> length == 2
@@ -155,6 +156,7 @@ struct Parrot end
 nwings(::Parrot) = UInt8(2)
 
 function test_abstract_return_type()
+    VERSION < v"1.1" && return                 # skip test for v1.0
     for animal in (Pigeon, Parrot)
         result = @check(animal)
         @test result.result == true
