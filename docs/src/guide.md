@@ -139,8 +139,6 @@ argument you want to pass an object to the function.  The object is expected
 to have a type that is assigned to the `Fly` trait.
 
 When return type is not specified, it is default to `Any`.
-Return type is currently not validated so it could be used here
-just for documentation purpose.
 
 !!! note
     The underscore may be placed at any argument position although it is
@@ -175,6 +173,8 @@ fly(bird::Bird, direction::Float64, altitude::Float64) = "Getting there!"
 speed(bird::Bird) = 10.0
 ```
 
+#### Using Holy Traits pattern
+
 Here, we implement the contracts directly with the specific concrete type.
 What if you have multiple types that satisfy the same trait.
 Holy Trait comes to rescue:
@@ -183,6 +183,29 @@ Holy Trait comes to rescue:
 liftoff(x::T) where {T <: Animal} = liftoff(trait(Fly, T), x)
 liftoff(::Can{Fly}, x) = "Hi ho!"
 liftoff(::Cannot{Fly}, x) = "baaa!"
+```
+
+#### Variance
+
+When you specify abstract types in the interface contracts,
+the argument types are contra-variant and return type is covariant.  In simple
+terms, a function that satisfies the contract may have:
+
+- argument types that are super-types of the types specified in the contract
+- return type that is a subtype of the return type specified in the contract
+
+For example, consider the following contract:
+```julia
+accelerate(_, ::AbstractFloat)::AbstractFloat
+```
+
+Then, the function below adheres to the contract because it can take
+any `Number` argument, which includes `AbstractFloat`.  Likewise, it returns
+a subtype of `AbstractFloat` and the caller of this interface should happily
+accept the result.
+
+```julia
+accelerate(::Bird, ::Number) = 4.5
 ```
 
 ### Validating a type against its interfaces
