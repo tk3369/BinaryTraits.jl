@@ -85,8 +85,13 @@ Return `true` if calling `f` with arguments with types `arg_types` would return 
     satisfy this check.
 """
 function has_proper_return_type(f::Base.Callable, arg_types::Type{T}, expected::Type) where T <: Tuple
-    possible_return_types = Base.return_types(f, arg_types)
-    return any(T <: expected for T in possible_return_types)
+    @static if VERSION < v"1.1"
+        @warn "Return type check is ignored. Please use julia version 1.1 or above."
+        return true
+    else
+        possible_return_types = Base.return_types(f, arg_types)
+        return any(T <: expected for T in possible_return_types)
+    end
 end
 
 """
