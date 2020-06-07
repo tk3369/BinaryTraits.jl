@@ -24,7 +24,7 @@ struct Contract{T <: DataType, F <: Function}
     func::F
     args::Tuple
     kwargs::Tuple
-    ret::Union{DataType,Nothing}
+    ret::Type
 end
 
 function Base.show(io::IO, c::Contract)
@@ -37,7 +37,7 @@ function Base.show(io::IO, c::Contract)
     args = string(args, ")")
     trait = supertype(c.trait)
     print(io, "$(trait): $(c.trait) ⇢ $(c.func)$(args)")
-    c.ret !== nothing && print(io, "::$(c.ret)")
+    c.ret !== Any && print(io, "::$(c.ret)")
 end
 
 """
@@ -56,6 +56,7 @@ An InterfaceReview object contains the validation results of an interface.
     result::Bool
     implemented::Vector{Contract}
     misses::Vector{Contract}
+    miss_reasons::Vector{String}
 end
 
 function Base.show(io::IO, ir::InterfaceReview)
@@ -72,8 +73,8 @@ function Base.show(io::IO, ir::InterfaceReview)
     end
     if length(ir.misses) > 0
         println(io, "❌ $(irtype) is missing these implementations:")
-        for (i, c) in enumerate(ir.misses)
-            println(io, "$(i). $c")
+        for (i, (c,reason)) in enumerate(zip(ir.misses, ir.miss_reasons))
+            println(io, "$(i). $c ($reason)")
         end
     end
 end
