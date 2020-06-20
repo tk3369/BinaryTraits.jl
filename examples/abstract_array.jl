@@ -1,6 +1,6 @@
 # See https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array-1
 using BinaryTraits: @trait, @implement, @check
-using Prefix: Has, No
+using BinaryTraits.Prefix: Has, No
 
 import Base: size, getindex, setindex!
 
