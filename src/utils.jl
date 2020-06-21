@@ -35,7 +35,7 @@ Only works when the verbose flag is set using `set_verbose!`.
 """
 function display_expanded_code(expr::Expr)
     if VERBOSE[]
-        code = MacroTools.postwalk(rmlines, expr)
+        code = postwalk(rmlines, expr)
         @info "Generated code" code
     end
     return nothing

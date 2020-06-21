@@ -1,0 +1,68 @@
+using BinaryTraits
+using BinaryTraits.Prefix: Is
+using Test
+
+# Indexable trait means you can get an element by an integer value
+import Base: getindex
+@trait Indexable
+@implement Is{Indexable} by getindex(_, v::Integer)
+
+# Any array should be indexable!
+@assign AbstractArray with Is{Indexable}
+@check AbstractArray
+
+# These functions should dispatch properly for all Indexable objects
+@holy second(v::Is{Indexable}) = v[2]
+@holy third(v::Is{Indexable}) = v[3]
+
+# Let's test!
+@test second([1,2,3]) == 2
+@test third([1,2,3,4,5]) == 3
+@test third(1:5) == 3
+
+# Isn't String also indexable?  No problem.
+@assign AbstractString with Is{Indexable}
+@test third("abcde") == 'c'
+
+# This wouldn't work :-(
+#=
+julia> [1,2,3] + (i for i in 4:6)
+ERROR: MethodError: no method matching +(::Array{Int64,1}, ::Base.Generator{UnitRange{Int64},typeof(identity)})
+=#
+
+# But, we can turn anything collectable into indexable by collecting it first :-)
+import Base: collect
+@trait Collectable
+@implement Is{Collectable} by collect(_)
+
+@assign Base.Generator with Is{Collectable}
+@check Base.Generator
+
+@holy Base.:+(v::Is{Indexable}, w::Is{Collectable}) = v + collect(w)
+
+# Nice!
+#=
+julia> [1,2,3] + (i for i in 4:6)
+3-element Array{Int64,1}:
+ 5
+ 7
+ 9
+=#
+
+# Let's make sure kwargs works properly
+@holy function increment(x::Is{Indexable}, i::Int; by = 1)
+    x[i] += by
+end
+@test increment([1,2,3], 2; by = 2) == 4
+
+# What about any existing where-parameters?
+@holy function add_first(y::Vector{T}, x::Is{Indexable}) where {T <: AbstractFloat}
+    return y .+ x[1]
+end
+@test add_first([1.0, 2.0, 3.0], [1, 2, 3]) == [2.0, 3.0, 4.0]
+
+# How to access the concrete type of a trait arg?
+@holy function my_type(x::Is{Indexable})
+    return typeof(x)
+end
+@test my_type([1,2,3]) == Vector{Int}
