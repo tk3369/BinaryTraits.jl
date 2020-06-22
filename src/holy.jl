@@ -4,7 +4,7 @@
 Define a function that contains traits arguments.  The macro expands the function
 definition using the Holy Traits pattern such that two functions are defined:
 
-1. A dispatch function that uses `trait` function to determine the type of trait args
+1. A dispatch function that uses [`trait`](@ref) function to determine the type of trait args
 2. An implementation function that contains trait type arguments in the front of the signature
 
 # Example
