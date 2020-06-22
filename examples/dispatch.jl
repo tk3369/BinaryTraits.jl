@@ -1,5 +1,5 @@
 using BinaryTraits
-using BinaryTraits.Prefix: Is
+using BinaryTraits.Prefix: Is, Not
 using Test
 
 # Indexable trait means you can get an element by an integer value
@@ -66,3 +66,39 @@ end
     return typeof(x)
 end
 @test my_type([1,2,3]) == Vector{Int}
+
+# How do we use more than one trait for the same function?  There are 2^n cases (n = number of traits).
+@holy seek(v::Is{Indexable}, w::Is{Collectable}, i::Integer)  = "using index"
+@holy seek(v::Is{Indexable}, w::Not{Collectable}, i::Integer) = "using index"
+@holy seek(v::Not{Indexable}, w::Is{Collectable}, i::Integer) = "using collect"
+@holy seek(v::Not{Indexable}, w::Not{Collectable}, i::Integer) = error("sorry")
+seek(v, i::Integer) = seek(v, v, i)   # write a custom dispatcher that duplicates the arg
+
+@test seek([1,2,3], 2) == "using index"
+@test seek((i for i in 4:6), 2) == "using collect"
+
+# Another option is to not use the @holy macro and roll your own dispatch
+function locate(v::T, i::Integer) where T
+    if trait(Indexable, T) isa Positive
+        "using index"
+    elseif trait(Collectable, T) isa Positive
+        "using collect"
+    else
+        error("sorry")
+    end
+end
+@test locate([1,2,3], 2) == "using index"
+@test locate((i for i in 4:6), 2) == "using collect"
+
+#=
+The above example begs the question whether we would want better syntax multi-trait dispatch... 💭
+In this particular scenario, there's a clear PRIORITY to choose an implementation based upon
+which trait is matched first.
+
+```
+@mholy function locate(v, i::Integer)
+    Is{Indexable} => v[1]
+    Is{Collectable} => collect(v)[1]
+end
+```
+=#
