@@ -12,17 +12,16 @@ import Base: getindex
 @check AbstractArray
 
 # These functions should dispatch properly for all Indexable objects
-@holy second(v::Is{Indexable}) = v[2]
-@holy third(v::Is{Indexable}) = v[3]
+@holy head(v::Is{Indexable}) = "using getindex" # v[1]
+@holy head(v::Not{Indexable}) = "using first" # first(v[1])
 
 # Let's test!
-@test second([1,2,3]) == 2
-@test third([1,2,3,4,5]) == 3
-@test third(1:5) == 3
+@test head([1,2,3]) == "using getindex"
+@test head(i for i in 4:6) == "using first"
 
 # Isn't String also indexable?  No problem.
 @assign AbstractString with Is{Indexable}
-@test third("abcde") == 'c'
+@test head("abcde") == "using getindex"
 
 # This wouldn't work :-(
 #=
@@ -67,15 +66,17 @@ end
 end
 @test my_type([1,2,3]) == Vector{Int}
 
-# How do we use more than one trait for the same function?  There are 2^n cases (n = number of traits).
-@holy seek(v::Is{Indexable}, w::Is{Collectable}, i::Integer)  = "using index"
-@holy seek(v::Is{Indexable}, w::Not{Collectable}, i::Integer) = "using index"
+# How do we use more than one trait for the same argument?
+# There are 2^n cases (n = number of traits).
+# However, it can be simplified using `BinaryTrait{T}` when cases overlap.
+@holy seek(v::Is{Indexable},  w::BinaryTrait{Collectable}, i::Integer)  = "using index"
 @holy seek(v::Not{Indexable}, w::Is{Collectable}, i::Integer) = "using collect"
 @holy seek(v::Not{Indexable}, w::Not{Collectable}, i::Integer) = error("sorry")
 seek(v, i::Integer) = seek(v, v, i)   # write a custom dispatcher that duplicates the arg
 
 @test seek([1,2,3], 2) == "using index"
 @test seek((i for i in 4:6), 2) == "using collect"
+@test_throws ErrorException seek(123, 1)
 
 # Another option is to not use the @holy macro and roll your own dispatch
 function locate(v::T, i::Integer) where T
@@ -90,15 +91,3 @@ end
 @test locate([1,2,3], 2) == "using index"
 @test locate((i for i in 4:6), 2) == "using collect"
 
-#=
-The above example begs the question whether we would want better syntax multi-trait dispatch... 💭
-In this particular scenario, there's a clear PRIORITY to choose an implementation based upon
-which trait is matched first.
-
-```
-@mholy function locate(v, i::Integer)
-    Is{Indexable} => v[1]
-    Is{Collectable} => collect(v)[1]
-end
-```
-=#
