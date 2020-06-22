@@ -1,0 +1,64 @@
+module HolyTraitsDispatch
+
+using BinaryTraits
+using BinaryTraits.Prefix: Is, Not
+using Test
+
+# Traits used in this test
+import Base: getindex
+@trait Indexable
+@implement Is{Indexable} by getindex(_, v::Integer)
+@assign AbstractArray with Is{Indexable}
+@assign AbstractString with Is{Indexable}
+
+import Base: collect
+@trait Collectable
+@implement Is{Collectable} by collect(_)
+@assign Base.Generator with Is{Collectable}
+
+function test()
+
+    @testset "General dispatch" begin
+        @holy head(v::Is{Indexable}) = :index # v[1]
+        @holy head(v::Not{Indexable}) = :notindex # first(v[1])
+        @test head([1,2,3]) == :index
+        @test head("abcde") == :index
+        @test head(i for i in 4:6) == :notindex
+    end
+
+    @testset "Keyword args handling" begin
+        @holy function increment(x::Is{Indexable}, i::Int; by = 1)
+            x[i] += by
+        end
+        @test increment([1,2,3], 2; by = 2) == 4
+    end
+
+    @testset "Where-clause handling" begin
+        @holy function addfirst(y::Vector{T}, x::Is{Indexable}) where {T <: AbstractFloat}
+            return y .+ x[1]
+        end
+        @test addfirst([1.0, 2.0, 3.0], [1, 2, 3]) == [2.0, 3.0, 4.0]
+    end
+
+    @testset "Multi-trait dispatch" begin
+        # How do we use more than one trait for the same argument?
+        # There are 2^n cases (n = number of traits).
+        # However, it can be simplified using `BinaryTrait{T}` when cases overlap.
+        @holy seek(v::Is{Indexable},  w::BinaryTrait{Collectable}, i::Integer)  = :index
+        @holy seek(v::Not{Indexable}, w::Is{Collectable}, i::Integer) = :collect
+        @holy seek(v::Not{Indexable}, w::Not{Collectable}, i::Integer) = :error
+        seek(v, i::Integer) = seek(v, v, i)   # write a custom dispatcher that duplicates the arg
+
+        @test seek([1,2,3], 2) == :index
+        @test seek((i for i in 4:6), 2) == :collect
+        @test seek(123, 1) == :error
+    end
+end
+
+end # module
+
+using Test
+@testset "Holy Traits dispatch" begin
+    import .HolyTraitsDispatch
+    HolyTraitsDispatch.test()
+end
