@@ -40,6 +40,15 @@ function test()
         @test addfirst([1.0, 2.0, 3.0], [1, 2, 3]) == [2.0, 3.0, 4.0]
     end
 
+    @testset "Unnamed args" begin
+        @holy unamed(v::Is{Indexable}, ::Int) = :int       # unamed regular position arg
+        @holy unamed(::Is{Indexable}, v::String) = :string # unamed trait arg
+        @holy unamed(::Is{Indexable}, ::Bool) = :bool      # unamed all!
+        @test unamed([1,2,3], 1) == :int
+        @test unamed([1,2,3], "abc") == :string
+        @test unamed([1,2,3], true) == :bool
+    end
+
     @testset "Multi-trait dispatch" begin
         # How do we use more than one trait for the same argument?
         # There are 2^n cases (n = number of traits).

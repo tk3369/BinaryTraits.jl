@@ -49,6 +49,13 @@ function make_dispatch_function(def::AbstractDict, trait_args::AbstractVector, m
 
     def = copy(def)  # make a copy to avoid side effects
 
+    # Make sure that all arguments has a name
+    for (i, arg) in enumerate(def[:args])
+        if is_typed_arg(arg) && length(arg.args) == 1
+            pushfirst!(arg.args, my_arg_names[i])
+        end
+    end
+
     # Start building the body expression
     body = Expr(:call, def[:name])
 
@@ -120,7 +127,7 @@ function arg_names(args::AbstractVector)
     return map(enumerate(args)) do (i, arg)
         if arg isa Symbol
             arg
-        elseif arg isa Expr && arg.head == :(::)
+        elseif is_typed_arg(arg)
             if length(arg.args) > 1
                 arg.args[1]
             else
@@ -142,7 +149,7 @@ and position `pos` of the trait arguments.
 function find_trait_args(mod::Module, args::Vector)
     trait_args = NamedTuple{(:name, :type, :pos, :param),Tuple{Symbol,DataType,Int,Symbol}}[]
     for (i, arg) in enumerate(args)
-        if arg isa Expr && arg.head == :(::)     # typed argument e.g. x::T, ::T
+        if is_typed_arg(arg)                     # typed argument e.g. x::T, ::T
             if length(arg.args) > 1
                 name = arg.args[1]               # extract x from x::T
                 type = arg.args[2]               # extract T from x::T
@@ -183,3 +190,10 @@ function make_trait_expr(T::DataType, param::Symbol)
     trait = T.parameters[1]   # extract Fly from Can{Fly}
     return :( BinaryTraits.trait($trait, $param) )
 end
+
+"""
+    is_typed_arg(arg::Union{Symbol,Expr})
+
+Returns `true` for typed argument expression.
+"""
+is_typed_arg(arg::Union{Symbol,Expr}) = arg isa Expr && arg.head == :(::)
