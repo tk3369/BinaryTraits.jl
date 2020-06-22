@@ -49,6 +49,11 @@ function test()
         @test unamed([1,2,3], true) == :bool
     end
 
+    @testset "Duck typed arg" begin
+        @holy duckarg(::Is{Indexable}, v) = :quack
+        @test duckarg([1,2,3], true) == :quack
+    end
+
     @testset "Multi-trait dispatch" begin
         # How do we use more than one trait for the same argument?
         # There are 2^n cases (n = number of traits).
