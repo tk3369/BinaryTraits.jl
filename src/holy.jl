@@ -134,7 +134,7 @@ function arg_names(args::AbstractVector)
                 Symbol("#ARG", i)
             end
         else
-            error("Impossible, bug? arg=$arg")
+            error("Impossible path, perhaps an upstream language bug? arg=$arg")
         end
     end
 end
