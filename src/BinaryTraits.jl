@@ -4,7 +4,7 @@ using MacroTools: rmlines, postwalk
 using ExprTools: splitdef, combinedef
 
 export BinaryTrait
-export @trait, @assign, @implement, @check, @holy
+export @trait, @assign, @implement, @check, @traitfn
 export check, is_trait, traits, required_contracts
 export init_traits
 
@@ -14,6 +14,6 @@ include("utils.jl")
 include("trait.jl")
 include("assignment.jl")
 include("interface.jl")
-include("holy.jl")
+include("traitfn.jl")
 
 end # module

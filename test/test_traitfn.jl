@@ -19,38 +19,38 @@ import Base: collect
 function test()
 
     @testset "General dispatch" begin
-        @holy head(v::Is{Indexable}) = :index # v[1]
-        @holy head(v::Not{Indexable}) = :notindex # first(v[1])
+        @traitfn head(v::Is{Indexable}) = :index     # v[1]
+        @traitfn head(v::Not{Indexable}) = :notindex # first(v[1])
         @test head([1,2,3]) == :index
         @test head("abcde") == :index
         @test head(i for i in 4:6) == :notindex
     end
 
     @testset "Keyword args handling" begin
-        @holy function increment(x::Is{Indexable}, i::Int; by = 1)
+        @traitfn function increment(x::Is{Indexable}, i::Int; by = 1)
             x[i] += by
         end
         @test increment([1,2,3], 2; by = 2) == 4
     end
 
     @testset "Where-clause handling" begin
-        @holy function addfirst(y::Vector{T}, x::Is{Indexable}) where {T <: AbstractFloat}
+        @traitfn function addfirst(y::Vector{T}, x::Is{Indexable}) where {T <: AbstractFloat}
             return y .+ x[1]
         end
         @test addfirst([1.0, 2.0, 3.0], [1, 2, 3]) == [2.0, 3.0, 4.0]
     end
 
     @testset "Unnamed args" begin
-        @holy unamed(v::Is{Indexable}, ::Int) = :int       # unamed regular position arg
-        @holy unamed(::Is{Indexable}, v::String) = :string # unamed trait arg
-        @holy unamed(::Is{Indexable}, ::Bool) = :bool      # unamed all!
+        @traitfn unamed(v::Is{Indexable}, ::Int) = :int       # unamed regular position arg
+        @traitfn unamed(::Is{Indexable}, v::String) = :string # unamed trait arg
+        @traitfn unamed(::Is{Indexable}, ::Bool) = :bool      # unamed all!
         @test unamed([1,2,3], 1) == :int
         @test unamed([1,2,3], "abc") == :string
         @test unamed([1,2,3], true) == :bool
     end
 
     @testset "Duck typed arg" begin
-        @holy duckarg(::Is{Indexable}, v) = :quack
+        @traitfn duckarg(::Is{Indexable}, v) = :quack
         @test duckarg([1,2,3], true) == :quack
     end
 
@@ -58,9 +58,9 @@ function test()
         # How do we use more than one trait for the same argument?
         # There are 2^n cases (n = number of traits).
         # However, it can be simplified using `BinaryTrait{T}` when cases overlap.
-        @holy seek(v::Is{Indexable},  w::BinaryTrait{Collectable}, i::Integer)  = :index
-        @holy seek(v::Not{Indexable}, w::Is{Collectable}, i::Integer) = :collect
-        @holy seek(v::Not{Indexable}, w::Not{Collectable}, i::Integer) = :error
+        @traitfn seek(v::Is{Indexable},  w::BinaryTrait{Collectable}, i::Integer)  = :index
+        @traitfn seek(v::Not{Indexable}, w::Is{Collectable}, i::Integer) = :collect
+        @traitfn seek(v::Not{Indexable}, w::Not{Collectable}, i::Integer) = :error
         seek(v, i::Integer) = seek(v, v, i)   # write a custom dispatcher that duplicates the arg
 
         @test seek([1,2,3], 2) == :index

@@ -1,5 +1,5 @@
 """
-    @holy <function definition>
+    @traitfn <function definition>
 
 Define a function that contains traits arguments.  The macro expands the function
 definition using the Holy Traits pattern such that two functions are defined:
@@ -10,7 +10,7 @@ definition using the Holy Traits pattern such that two functions are defined:
 # Example
 
 ```
-@holy second(v::Is{Indexable}) = v[2]
+@traitfn second(v::Is{Indexable}) = v[2]
 ```
 
 is expanded to:
@@ -19,7 +19,7 @@ second(v::T) where T = second(BinaryTraits.trait(Indexable, T), v)
 second(::Positive{Indexable}, v::T) where T = v[2]
 ```
 """
-macro holy(ex::Expr)
+macro traitfn(ex::Expr)
     mod = __module__
     def = splitdef(ex)
 

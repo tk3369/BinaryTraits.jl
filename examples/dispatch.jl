@@ -12,8 +12,8 @@ import Base: getindex
 @check AbstractArray
 
 # These functions should dispatch properly for all Indexable objects
-@holy head(v::Is{Indexable}) = "using getindex" # v[1]
-@holy head(v::Not{Indexable}) = "using first" # first(v[1])
+@traitfn head(v::Is{Indexable}) = "using getindex" # v[1]
+@traitfn head(v::Not{Indexable}) = "using first"   # first(v[1])
 
 # Let's test!
 @test head([1,2,3]) == "using getindex"
@@ -37,7 +37,7 @@ import Base: collect
 @assign Base.Generator with Is{Collectable}
 @check Base.Generator
 
-@holy Base.:+(v::Is{Indexable}, w::Is{Collectable}) = v + collect(w)
+@traitfn Base.:+(v::Is{Indexable}, w::Is{Collectable}) = v + collect(w)
 
 # Nice!
 #=
@@ -49,19 +49,19 @@ julia> [1,2,3] + (i for i in 4:6)
 =#
 
 # Let's make sure kwargs works properly
-@holy function increment(x::Is{Indexable}, i::Int; by = 1)
+@traitfn function increment(x::Is{Indexable}, i::Int; by = 1)
     x[i] += by
 end
 @test increment([1,2,3], 2; by = 2) == 4
 
 # What about any existing where-parameters?
-@holy function add_first(y::Vector{T}, x::Is{Indexable}) where {T <: AbstractFloat}
+@traitfn function add_first(y::Vector{T}, x::Is{Indexable}) where {T <: AbstractFloat}
     return y .+ x[1]
 end
 @test add_first([1.0, 2.0, 3.0], [1, 2, 3]) == [2.0, 3.0, 4.0]
 
 # How to access the concrete type of a trait arg?
-@holy function my_type(x::Is{Indexable})
+@traitfn function my_type(x::Is{Indexable})
     return typeof(x)
 end
 @test my_type([1,2,3]) == Vector{Int}
@@ -69,16 +69,16 @@ end
 # How do we use more than one trait for the same argument?
 # There are 2^n cases (n = number of traits).
 # However, it can be simplified using `BinaryTrait{T}` when cases overlap.
-@holy seek(v::Is{Indexable},  w::BinaryTrait{Collectable}, i::Integer)  = "using index"
-@holy seek(v::Not{Indexable}, w::Is{Collectable}, i::Integer) = "using collect"
-@holy seek(v::Not{Indexable}, w::Not{Collectable}, i::Integer) = error("sorry")
+@traitfn seek(v::Is{Indexable},  w::BinaryTrait{Collectable}, i::Integer)  = "using index"
+@traitfn seek(v::Not{Indexable}, w::Is{Collectable}, i::Integer) = "using collect"
+@traitfn seek(v::Not{Indexable}, w::Not{Collectable}, i::Integer) = error("sorry")
 seek(v, i::Integer) = seek(v, v, i)   # write a custom dispatcher that duplicates the arg
 
 @test seek([1,2,3], 2) == "using index"
 @test seek((i for i in 4:6), 2) == "using collect"
 @test_throws ErrorException seek(123, 1)
 
-# Another option is to not use the @holy macro and roll your own dispatch
+# Another option is to not use the @traitfn macro and roll your own dispatch
 function locate(v::T, i::Integer) where T
     if trait(Indexable, T) isa Positive
         "using index"

@@ -180,10 +180,20 @@ What if you have multiple types that satisfy the same trait.
 Holy Trait comes to rescue:
 
 ```julia
-liftoff(x::T) where {T <: Animal} = liftoff(trait(Fly, T), x)
+liftoff(x::T) where T = liftoff(trait(Fly, T), x)
 liftoff(::Can{Fly}, x) = "Hi ho!"
 liftoff(::Cannot{Fly}, x) = "baaa!"
 ```
+
+This is nice but it should be nicer. BinaryTraits gives you a better syntax that
+generates the same code above:
+
+```julia
+@traitfn liftoff(x::Can{Fly}) = "Hi ho!"
+@traitfn liftoff(x::Cannot{Fly}) = "baaa!"
+```
+
+So, there is no need to write the Holy Trait dispatch function anymore.
 
 #### Variance
 

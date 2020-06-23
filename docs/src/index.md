@@ -90,9 +90,8 @@ If we would just implement interface contracts directly on concrete types then i
 be too specific for what it is worth.  If we have 100 flying animals, we shouldn't need to define
 100 interface methods for the 100 concrete types.
 
-That's how Holy Traits pattern kicks in.  Rather than implementing the `fly` method
-for `Duck` as shown in the previous section, we could have implemented the following
-functions instead:
+That's how Holy Traits pattern kicks in.  The traditional Holy Traits pattern
+requires a dispatch function and implementation function as shown below:
 
 ```julia
 fly(x::T, direction::Float64, altitude::Float64) where T = fly(trait(Fly, T), x, direction, altitude)
@@ -100,7 +99,14 @@ fly(::Can{Fly}, x, direction::Float64, altitude::Float64) = "Having fun!"
 fly(::Cannot{Fly}, x, direction::Float64, altitude::Float64) = "Too bad..."
 ```
 
-The first function determines whether the object exhibits `Can{Fly}` or `Cannot{Fly}` trait
-and dispatch to the proper function. We did not specify the type of the `x` argument
-but in reality if we are dealing with the animal kingdom only then we can define an
-abstract type `Animal` and qualify that in there where-clause as in `where {T <: Animal>}`.
+BinaryTraits gives you a better syntax with the `@traitfn` macro that allows you to write
+the same thing as follows:
+
+```julia
+@traitfn fly(x::Can{Fly}, direction::Float64, altitude::Float64) = "Having fun!"
+@traitfn fly(x::Cannot{Fly}, direction::Float64, altitude::Float64) = "Too bad..."
+```
+
+There is no need to write the dispatch function anymore, and the functions that
+require trait arguments just need to specify the positive/negative trait type
+directly. The macro just automates the work for you.
