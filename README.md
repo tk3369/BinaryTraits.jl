@@ -57,6 +57,7 @@ logged in the issues list.
 * Define interface contracts required for a trait
 * Verify that your data type fully implements all interface contracts
 * Define traits/interfaces in one module and use them from another module
+* Define trait dispatch functions easily
 
 ## Credits
 
