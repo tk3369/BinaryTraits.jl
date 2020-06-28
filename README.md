@@ -3,6 +3,7 @@
 [![Dev Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://tk3369.github.io/BinaryTraits.jl/dev)
 [![Travis Build Status](https://travis-ci.org/tk3369/BinaryTraits.jl.svg?branch=master)](https://travis-ci.org/tk3369/BinaryTraits.jl)
 [![codecov.io](http://codecov.io/github/tk3369/BinaryTraits.jl/coverage.svg?branch=master)](http://codecov.io/github/tk3369/BinaryTraits.jl?branch=master)
+![Project Status](https://img.shields.io/badge/status-maturing-green)
 
 BinaryTraits focuses on usability - traits should be simple to understand and easy to use.
 For that reason, every trait is binary.  An object either has the trait (positive) or does not
