@@ -46,6 +46,9 @@ fly(::Bird, destination::Location, speed::Float64) = "Wohoo! Arrived! 🐦"
 
 # Verify that your implementation is correct
 @check(Bird)
+
+# Dispatch for all flying things
+@traitfn flap(::Can{Fly}, freq::Float64) = "Flapping wings at $freq Hz"
 ```
 
 ## Main Features
