@@ -13,7 +13,11 @@ macro testme(ex)
                 false
             catch e
                 # @info "expansion error" e
-                e isa LoadError
+                @static if VERSION < v"1.7.0-DEV"
+                    e isa LoadError
+                else
+                    e isa SyntaxError || e isa MethodError
+                end
             end
         end)
 end
