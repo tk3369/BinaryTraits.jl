@@ -1,7 +1,7 @@
 name = "BinaryTraits"
 uuid = "190e46ec-f771-4705-b939-984896f7be0e"
 authors = ["Tom Kwong <tk3369@gmail.com>"]
-version = "0.6.0"
+version = "0.7.0"
 
 [deps]
 ExprTools = "e2ba6199-217a-4e67-a87a-7c52f15ade04"
