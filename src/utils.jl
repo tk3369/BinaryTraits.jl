@@ -48,6 +48,16 @@ function define_const!(mod::Module, name::Symbol, val)
         mod.eval(name)
     end
 end
+
+# Utility to test the depth in the type tree of a given type. Root of the tree has depth 0
+function _depth(::Type{T}) where {T}
+    if T === Any 
+        return 0
+    else
+        return 1 + _depth(supertype(T))
+    end
+end
+
 # -----------------------------------------------------------------------------------------
 # Storage management
 # -----------------------------------------------------------------------------------------
@@ -169,4 +179,3 @@ function Base.isempty(st::TraitsStorage)
     isempty(st.interface_map) &&
     isempty(st.composite_map)
 end
-

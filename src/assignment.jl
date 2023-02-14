@@ -7,10 +7,15 @@ the ones that were assigned to any supertypes of `T`.
 See also [`@assign`](@ref).
 """
 function traits(m::Module, T::Assignable)
-    traits_map = get_traits_map(m)
+    _traits_map = collect(pairs(get_traits_map(m)))
+    traits_map = sort(_traits_map; by = p -> _depth(first(p)))
     base = Set{DataType}()
-    for (Tmap, s) in pairs(traits_map)
+    for (Tmap, s) in traits_map
         if T <: Tmap
+            for trait in s
+                T_new = binary_trait_type(trait)
+                filter!(t -> !(binary_trait_type(t) <: T_new), base)
+            end
             union!(base, s)
         end
     end
