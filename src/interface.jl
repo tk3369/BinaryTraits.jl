@@ -54,11 +54,12 @@ function check(m::Module, T::Assignable)
     for contract in required_contracts(m, T)
         tuple_type = make_tuple_type(T, contract)
         method_exists = has_method(contract.func, tuple_type, contract.kwargs)
+        traits_match = method_exists ? method_traits_match(contract, contract.func, tuple_type) : false
         return_type_matched = has_proper_return_type(contract.func, tuple_type, contract.ret)
-        if method_exists && return_type_matched
+        if method_exists && return_type_matched && traits_match
             push!(implemented_contracts, contract)
         else
-            reason = !method_exists ? "Missing implementation" : "Improper return type"
+            reason = !(method_exists && traits_match) ? "Missing implementation" : "Improper return type"
             @warn reason contract
 
             all_good = false
@@ -102,6 +103,16 @@ with the type `T` that is being checked.
 """
 function make_tuple_type(T::Assignable, c::Contract)
     args = [t == c.trait ? T : t for t in c.args]
+
+    return Tuple{args...}
+end
+
+function make_traited_tuple_type(T::Assignable, c::Contract)
+    args = mapreduce((a, b) -> vcat(a..., b), c.args) do t
+        return t == c.trait ? (t,T) : t
+    end
+    args = reduce(vcat, args)
+
     return Tuple{args...}
 end
 
@@ -241,5 +252,41 @@ function has_method(@nospecialize(f), @nospecialize(t), kwnames::Tuple{Vararg{Sy
         return hasmethod(f, t, kwnames)
     else
         return hasmethod(f, t)
+    end
+end
+
+"""
+    method_traits_match(contract, f, Tuple{argument_types...})
+
+Checks that the method for `f` which matches the `Tuple` of types according to [has_mmethod](@ref)
+is defined with types whose types actually match the relevant traits for the contract.
+
+This is necessary because, through Julia's type hierarchy, it is possible a default method exists
+but is defined using the negated trait.
+"""
+function method_traits_match(contract, @nospecialize(f), @nospecialize(t))
+    mthd = which(f, t)
+    m = mthd.module
+    
+    # Use this to handle composite traits
+    composite_map = get_local_storage(m).composite_map
+
+    sig = Base.tail(fieldtypes(mthd.sig))
+
+    # Find the arguments which match the trait from the interface
+    idxs = findall(isequal(contract.trait), contract.args)
+
+    # Only pass if al of those types possess the correct trait.
+    return all(sig[idxs]) do T
+        _T_traits = traits(m, T)
+        T_traits = mapreduce(union, _T_traits; init = Set()) do _trait
+            if _trait in keys(composite_map)
+                return composite_map[_trait]
+            else
+                return Set((_trait,))
+            end
+        end
+
+        return contract.trait in T_traits
     end
 end
