@@ -107,15 +107,6 @@ function make_tuple_type(T::Assignable, c::Contract)
     return Tuple{args...}
 end
 
-function make_traited_tuple_type(T::Assignable, c::Contract)
-    args = mapreduce((a, b) -> vcat(a..., b), c.args) do t
-        return t == c.trait ? (t,T) : t
-    end
-    args = reduce(vcat, args)
-
-    return Tuple{args...}
-end
-
 """
     required_contracts(module::Module, T::Assignable)
 
