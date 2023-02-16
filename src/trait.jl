@@ -5,6 +5,8 @@ export trait
 
 abstract type BinaryTrait{T} end
 
+binary_trait_type(::Type{<:BinaryTrait{T}}) where T = T
+
 # This sub-module is used to keep standard prefix types
 module Prefix
     import ..BinaryTraits
